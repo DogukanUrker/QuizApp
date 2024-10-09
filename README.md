@@ -20,6 +20,14 @@ go to server directory
 
 `cd server`
 
+create virtual environment
+
+Windows:
+`python -m venv venv`
+
+macOS/Linux:
+`python3 -m venv venv`
+
 activate virtual environment
 
 Windows:
