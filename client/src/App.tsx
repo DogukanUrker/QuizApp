@@ -1,7 +1,8 @@
 import { useState, useEffect } from "react";
 import "./App.css";
 import axios from "axios";
-
+import { ThemeProvider } from "@/components/theme-provider";
+import { ModeToggle } from "./components/mode-toggle";
 function App() {
   const [message, setMessage] = useState("");
 
@@ -15,9 +16,10 @@ function App() {
   }, []);
 
   return (
-    <>
+    <ThemeProvider defaultTheme="dark" storageKey="vite-ui-theme">
+      <ModeToggle />
       <h1>{message}</h1>
-    </>
+    </ThemeProvider>
   );
 }
 
