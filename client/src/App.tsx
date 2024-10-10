@@ -1,5 +1,5 @@
 import Auth from "./pages/auth";
-import { BrowserRouter as Router, Routes, Route } from "react-router-dom";
+import { BrowserRouter as Router, Route, Routes } from "react-router-dom";
 import { ThemeProvider } from "@/components/theme-provider.tsx";
 import { ModeToggle } from "@/components/mode-toggle.tsx";
 
