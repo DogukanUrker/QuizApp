@@ -1,26 +1,22 @@
-import { useState, useEffect } from "react";
-import "./App.css";
-import axios from "axios";
-import { ThemeProvider } from "@/components/theme-provider";
-import { ModeToggle } from "./components/mode-toggle";
-function App() {
-  const [message, setMessage] = useState("");
+import Auth from "./pages/auth";
+import { BrowserRouter as Router, Routes, Route } from "react-router-dom";
+import { ThemeProvider } from "@/components/theme-provider.tsx";
+import { ModeToggle } from "@/components/mode-toggle.tsx";
 
-  const fetchApi = async () => {
-    const response = await axios.get("http://127.0.0.1:8080/api");
-    setMessage(response.data.message);
-  };
-
-  useEffect(() => {
-    fetchApi();
-  }, []);
-
+const App = () => {
   return (
-    <ThemeProvider defaultTheme="dark" storageKey="vite-ui-theme">
+    <ThemeProvider defaultTheme="dark" storageKey="theme">
       <ModeToggle />
-      <h1>{message}</h1>
+      <Router>
+        <Routes>
+          <Route path="/" element={<Auth />} />
+          <Route path="/auth" element={<Auth />} />
+          <Route path="/login" element={<Auth />} />
+          <Route path="/signup" element={<Auth />} />
+        </Routes>
+      </Router>
     </ThemeProvider>
   );
-}
+};
 
 export default App;
