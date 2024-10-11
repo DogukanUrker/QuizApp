@@ -11,7 +11,8 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import axios from "axios";
-import { useState } from "react";
+import React, { useState } from "react";
+import Spinner from "@/components/loading-spinner.tsx";
 
 const Auth = () => {
   const [formData, setFormData] = useState({
@@ -22,6 +23,8 @@ const Auth = () => {
     signupPassword: "",
   });
 
+  const [loading, setLoading] = useState(false); // Loading state
+
   const handleInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const { id, value } = e.target;
     setFormData((prevState) => ({ ...prevState, [id]: value }));
@@ -29,10 +32,13 @@ const Auth = () => {
 
   const makeRequest = async (url: string, data: object) => {
     try {
+      setLoading(true);
       const response = await axios.post(url, data);
       console.log(response.data.message);
     } catch (error) {
       console.error("Error during API request:", error);
+    } finally {
+      setLoading(false);
     }
   };
 
@@ -41,14 +47,14 @@ const Auth = () => {
       name: formData.name,
       email: formData.signupEmail,
       password: formData.signupPassword,
-    });
+    }).then((r) => console.log(r));
   };
 
   const handleLogin = () => {
     makeRequest("http://127.0.0.1:8080/login", {
       email: formData.loginEmail,
       password: formData.loginPassword,
-    });
+    }).then((r) => console.log(r));
   };
 
   return (
@@ -57,7 +63,7 @@ const Auth = () => {
         defaultValue={
           location.pathname === "/login" && "login" ? "login" : "signup"
         }
-        className="w-[360px]"
+        className="w-[365px]"
       >
         <TabsList className="grid w-full grid-cols-2">
           <TabsTrigger value="login">Login</TabsTrigger>
@@ -66,8 +72,10 @@ const Auth = () => {
         <TabsContent value="login">
           <Card>
             <CardHeader>
-              <CardTitle>Login</CardTitle>
-              <CardDescription>Welcome back to Quiz App!</CardDescription>
+              <CardTitle>Sign in to Quiz App</CardTitle>
+              <CardDescription>
+                Welcome back! Please sign in to continue.
+              </CardDescription>
             </CardHeader>
             <CardContent className="space-y-2">
               <div className="space-y-1">
@@ -84,8 +92,12 @@ const Auth = () => {
               </div>
             </CardContent>
             <CardFooter>
-              <Button onClick={handleLogin} className="w-full">
-                Login
+              <Button
+                onClick={handleLogin}
+                className="w-full"
+                disabled={loading}
+              >
+                {loading ? <Spinner content="Login" /> : "Login"}
               </Button>
             </CardFooter>
           </Card>
@@ -93,9 +105,9 @@ const Auth = () => {
         <TabsContent value="signup">
           <Card>
             <CardHeader>
-              <CardTitle>Signup</CardTitle>
+              <CardTitle>Create your account</CardTitle>
               <CardDescription>
-                Create your account to start playing quizzes!
+                Welcome! Please fill in the details to get started.
               </CardDescription>
             </CardHeader>
             <CardContent className="space-y-2">
@@ -117,8 +129,12 @@ const Auth = () => {
               </div>
             </CardContent>
             <CardFooter>
-              <Button onClick={handleSignup} className="w-full">
-                Signup
+              <Button
+                onClick={handleSignup}
+                className="w-full"
+                disabled={loading}
+              >
+                {loading ? <Spinner content="Signup" /> : "Signup"}
               </Button>
             </CardFooter>
           </Card>
