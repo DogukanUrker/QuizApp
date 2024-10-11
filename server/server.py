@@ -5,7 +5,7 @@ from pymongo.server_api import ServerApi
 from config import Config
 from utils.timestamp import current
 from utils.hashing import hashPassword, verifyPassword
-from flask_jwt_extended import JWTManager, create_access_token
+from flask_jwt_extended import JWTManager, create_access_token, jwt_required, get_jwt
 
 uri = f"mongodb+srv://{Config.Mongo.USERNAME}:{Config.Mongo.PASSWORD}@app.fqx7f.mongodb.net/?retryWrites=true&w=majority&appName=app"
 
@@ -14,6 +14,8 @@ cors = CORS(app, origins="*")
 app.config["SECRET_KEY"] = Config.SECRET_KEY
 app.config['JWT_SECRET_KEY'] = Config.SECRET_KEY
 jwt = JWTManager(app)
+
+blacklist = set()
 
 
 @app.route("/api", methods=["GET"])
@@ -77,5 +79,18 @@ def login():
         return jsonify({"error": str(e)}), 500
 
 
+@app.route("/logout", methods=["POST"])
+@jwt_required()
+def logout():
+    jti = get_jwt()["jti"]
+    blacklist.add(jti)
+    return jsonify({"message": "Successfully logged out"}), 200
+
+
+@jwt.token_in_blocklist_loader
+def check_if_token_is_blacklisted(jwt_header, jwt_payload):
+    return jwt_payload["jti"] in blacklist
+
+
 if __name__ == "__main__":
-    app.run(debug=True, port=8080)
+    app.run(debug=True, host="192.168.6.31", port=8080)
