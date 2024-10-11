@@ -10,8 +10,17 @@ import {
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from "@/components/ui/alert-dialog";
 import axios from "axios";
-import React, { useState } from "react";
+import React, { useEffect, useState } from "react";
 import Spinner from "@/components/loading-spinner.tsx";
 
 const Auth = () => {
@@ -24,45 +33,70 @@ const Auth = () => {
   });
 
   const [loading, setLoading] = useState(false); // Loading state
+  const [activeTab, setActiveTab] = useState("signup"); // Active tab state
+  const [showDialog, setShowDialog] = useState(false); // Dialog state
+
+  useEffect(() => {
+    if (window.location.pathname === "/login") {
+      setActiveTab("login");
+    }
+  }, []);
 
   const handleInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const { id, value } = e.target;
     setFormData((prevState) => ({ ...prevState, [id]: value }));
   };
 
-  const makeRequest = async (url: string, data: object) => {
+  const handleSignup = async () => {
     try {
       setLoading(true);
-      const response = await axios.post(url, data);
-      console.log(response.data.message);
+      const response = await axios.post("http://192.168.6.31:8080/addUser", {
+        name: formData.name,
+        email: formData.signupEmail,
+        password: formData.signupPassword,
+      });
+
+      if (response.data.error) {
+        console.log(response.data.message);
+      } else {
+        console.log(response.data);
+        setActiveTab("login"); // Set active tab to login after signup
+        setShowDialog(true); // Show dialog
+      }
     } catch (error) {
-      console.error("Error during API request:", error);
+      console.error("Error during signup request:", error);
     } finally {
       setLoading(false);
     }
   };
 
-  const handleSignup = () => {
-    makeRequest("http://127.0.0.1:8080/addUser", {
-      name: formData.name,
-      email: formData.signupEmail,
-      password: formData.signupPassword,
-    }).then((r) => console.log(r));
-  };
+  const handleLogin = async () => {
+    try {
+      setLoading(true);
+      const response = await axios.post("http://192.168.6.31:8080/login", {
+        email: formData.loginEmail,
+        password: formData.loginPassword,
+      });
 
-  const handleLogin = () => {
-    makeRequest("http://127.0.0.1:8080/login", {
-      email: formData.loginEmail,
-      password: formData.loginPassword,
-    }).then((r) => console.log(r));
+      if (response.data.error) {
+        console.log(response.data.message);
+      } else {
+        console.log(response.data);
+        localStorage.setItem("token", response.data.accessToken);
+        window.location.href = "/";
+      }
+    } catch (error) {
+      console.error("Error during login request:", error);
+    } finally {
+      setLoading(false);
+    }
   };
 
   return (
     <div className="flex items-center justify-center min-h-screen">
       <Tabs
-        defaultValue={
-          location.pathname === "/login" && "login" ? "login" : "signup"
-        }
+        value={activeTab}
+        onValueChange={setActiveTab}
         className="w-[365px]"
       >
         <TabsList className="grid w-full grid-cols-2">
@@ -140,6 +174,21 @@ const Auth = () => {
           </Card>
         </TabsContent>
       </Tabs>
+      <AlertDialog open={showDialog} onOpenChange={setShowDialog}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Signup Successful</AlertDialogTitle>
+          </AlertDialogHeader>
+          <AlertDialogDescription>
+            You need to login after signup.
+          </AlertDialogDescription>
+          <AlertDialogFooter>
+            <AlertDialogAction onClick={() => setShowDialog(false)}>
+              Ok
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </div>
   );
 };
