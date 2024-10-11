@@ -1,5 +1,6 @@
 import Auth from "./pages/auth";
 import Home from "./pages/home";
+import Logout from "@/pages/logout.tsx";
 import { BrowserRouter as Router, Route, Routes } from "react-router-dom";
 import { ThemeProvider } from "@/components/theme-provider.tsx";
 import { ModeToggle } from "@/components/mode-toggle.tsx";
@@ -19,7 +20,11 @@ const App = () => {
               <Route path="/signup" element={<Auth />} />
             </>
           ) : (
-            <Route path="/" element={<Home />} />
+            <>
+              {" "}
+              <Route path="/" element={<Home />} />
+              <Route path="/logout" element={<Logout />} />
+            </>
           )}
         </Routes>
       </Router>
