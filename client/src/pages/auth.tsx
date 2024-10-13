@@ -83,6 +83,14 @@ const Auth = () => {
       } else {
         console.log(response.data);
         localStorage.setItem("token", response.data.accessToken);
+        localStorage.setItem(
+          "userName",
+          JSON.stringify(response.data.user.name),
+        );
+        localStorage.setItem(
+          "userEmail",
+          JSON.stringify(response.data.user.email),
+        );
         window.location.href = "/";
       }
     } catch (error) {
