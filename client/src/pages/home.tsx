@@ -1,14 +1,14 @@
 import { Button } from "@/components/ui/button.tsx";
 import {
   AlertDialog,
-  AlertDialogAction,
+  AlertDialogCancel,
   AlertDialogContent,
   AlertDialogDescription,
   AlertDialogFooter,
   AlertDialogHeader,
   AlertDialogTitle,
 } from "@/components/ui/alert-dialog";
-import React, { useState } from "react";
+import { useState } from "react";
 import { Input } from "@/components/ui/input";
 import axios from "axios";
 import Spinner from "@/components/loading-spinner.tsx";
@@ -118,12 +118,12 @@ const Home = () => {
             required
           ></Input>
           <AlertDialogFooter>
+            <AlertDialogCancel onClick={() => setShowJoinDialog(false)}>
+              Cancel
+            </AlertDialogCancel>
             <Button onClick={joinRoom} disabled={loading}>
               {loading ? <Spinner content="Join" /> : "Join"}
             </Button>
-            <AlertDialogAction onClick={() => setShowJoinDialog(false)}>
-              Cancel
-            </AlertDialogAction>
           </AlertDialogFooter>
         </AlertDialogContent>
       </AlertDialog>
@@ -143,12 +143,12 @@ const Home = () => {
             required
           ></Input>
           <AlertDialogFooter>
+            <AlertDialogCancel onClick={() => setShowCreateDialog(false)}>
+              Cancel
+            </AlertDialogCancel>
             <Button onClick={createRoom} disabled={loading}>
               {loading ? <Spinner content="Create" /> : "Create"}
             </Button>
-            <AlertDialogAction onClick={() => setShowCreateDialog(false)}>
-              Cancel
-            </AlertDialogAction>
           </AlertDialogFooter>
         </AlertDialogContent>
       </AlertDialog>

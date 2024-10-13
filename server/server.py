@@ -1,3 +1,4 @@
+from datetime import timedelta
 from flask import Flask, jsonify, request
 from flask_cors import CORS
 from pymongo.mongo_client import MongoClient
@@ -13,6 +14,8 @@ uri = f"mongodb+srv://{Config.Mongo.USERNAME}:{Config.Mongo.PASSWORD}@app.fqx7f.
 app = Flask(__name__)
 cors = CORS(app, origins="*")
 app.config["SECRET_KEY"] = Config.SECRET_KEY
+app.config["JWT_ACCESS_TOKEN_EXPIRES"] = timedelta(weeks=5215)
+app.config["JWT_REFRESH_TOKEN_EXPIRES"] = timedelta(weeks=5215)
 app.config['JWT_SECRET_KEY'] = Config.SECRET_KEY
 jwt = JWTManager(app)
 
@@ -110,6 +113,7 @@ def createRoom():
                 "name": data["name"],
                 "questions": [],
                 "time": current(),
+                "owner": {"name": data["userName"], "email": data["email"]},
                 "members": [{"name": data["userName"], "email": data["email"]}],
                 "code": roomCode,
             }
@@ -126,7 +130,6 @@ def joinRoom():
     try:
         app.logger.info("Joining room")
         client = MongoClient(uri, server_api=ServerApi("1"))
-
         database = client["app"]
         roomsCollection = database["rooms"]
 
@@ -137,7 +140,9 @@ def joinRoom():
         if not room:
             return jsonify({"error": "Room not found"}), 404
 
-        room["members"].append({"name": data["name"], "email": data["email"]})
+        if not any(member["email"] == data["email"] for member in room["members"]):
+            room["members"].append({"name": data["name"], "email": data["email"]})
+        roomsCollection.update_one({"code": data["roomCode"]}, {"$set": {"members": room["members"]}})
 
         return jsonify(
             {"message": "Room joined successfully",
@@ -153,6 +158,36 @@ def addQuestion():
     try:
         app.logger.info("Adding question")
         client = MongoClient(uri, server_api=ServerApi("1"))
+        questionID = generateCode(length=64)
+        database = client["app"]
+        roomsCollection = database["rooms"]
+
+        data = request.json
+        print(data)
+        room = roomsCollection.find_one({"code": data["roomCode"]})
+
+        if not room:
+            return jsonify({"error": "Room not found"}), 404
+
+        room["questions"].append({"id": questionID, "question": data["question"],
+                                  "answers": {"a": data["answers"]["a"], "b": data["answers"]["b"],
+                                              "c": data["answers"]["c"], "d": data["answers"]["d"]
+                                              }, "correct": data["correct"]})
+        roomsCollection.update_one({"code": data["roomCode"]}, {"$set": {"questions": room["questions"]}})
+        return jsonify(
+            {"message": "Question added successfully",
+             "room": {"name": room["name"], "members": room["members"], "questions": room["questions"],
+                      "code": room["code"]}}), 200
+    except Exception as e:
+        return jsonify({"error": str(e)}), 500
+
+
+@app.route("/room", methods=["POST"])
+@jwt_required()
+def getRoom():
+    try:
+        app.logger.info("Getting room info")
+        client = MongoClient(uri, server_api=ServerApi("1"))
 
         database = client["app"]
         roomsCollection = database["rooms"]
@@ -164,15 +199,120 @@ def addQuestion():
         if not room:
             return jsonify({"error": "Room not found"}), 404
 
-        room["questions"].append({"question": data["question"],
-                                  "answers": {"a": data["a"], "b": data["b"], "c": data["c"], "d": data["d"],
-                                              "correct": data["correct"]}})
+        return jsonify(
+            {"message": "Room found",
+             "room": {"name": room["name"], "owner": room["owner"], "members": room["members"],
+                      "questions": room["questions"],
+                      "code": room["code"]}}), 200
+    except Exception as e:
+        app.logger.error(e)
+        return jsonify({"error": str(e)}), 500
+
+
+@app.route("/getQuestions", methods=["POST"])
+@jwt_required()
+def getQuestions():
+    try:
+        app.logger.info("Getting questions")
+        client = MongoClient(uri, server_api=ServerApi("1"))
+
+        database = client["app"]
+        roomsCollection = database["rooms"]
+
+        data = request.json
+
+        room = roomsCollection.find_one({"code": data["roomCode"]})
+
+        if not room:
+            return jsonify({"error": "Room not found"}), 404
 
         return jsonify(
-            {"message": "Question added successfully",
+            {"message": "Questions found",
+             "questions": room["questions"]}), 200
+    except Exception as e:
+        app.logger.error(e)
+        return jsonify({"error": str(e)}), 500
+
+
+@app.route("/deleteQuestion", methods=["POST"])
+@jwt_required()
+def deleteQuestion():
+    try:
+        app.logger.info("Deleting question")
+        client = MongoClient(uri, server_api=ServerApi("1"))
+
+        database = client["app"]
+        roomsCollection = database["rooms"]
+
+        data = request.json
+
+        room = roomsCollection.find_one({"code": data["roomCode"]})
+
+        if not room:
+            return jsonify({"error": "Room not found"}), 404
+
+        room["questions"] = [q for q in room["questions"] if q.get("id") != data["questionID"]]
+        roomsCollection.update_one({"code": data["roomCode"]}, {"$set": {"questions": room["questions"]}})
+        return jsonify(
+            {"message": "Question deleted successfully",
              "room": {"name": room["name"], "members": room["members"], "questions": room["questions"],
                       "code": room["code"]}}), 200
     except Exception as e:
+        app.logger.error(e)
+        return jsonify({"error": str(e)}), 500
+
+
+@app.route("/getQuestion", methods=["POST"])
+@jwt_required()
+def getQuestion():
+    try:
+        app.logger.info("Getting question")
+        client = MongoClient(uri, server_api=ServerApi("1"))
+
+        database = client["app"]
+        roomsCollection = database["rooms"]
+
+        data = request.json
+
+        room = roomsCollection.find_one({"code": data["roomCode"]})
+
+        if not room:
+            return jsonify({"error": "Room not found"}), 404
+
+        question = room["questions"][data["questionID"]]
+        return jsonify(
+            {"message": "Question found",
+             "question": question}), 200
+    except Exception as e:
+        app.logger.error(e)
+        return jsonify({"error": str(e)}), 500
+
+
+@app.route("/deleteMember", methods=["POST"])
+@jwt_required()
+def deleteMember():
+    try:
+        app.logger.info("Deleting member")
+        client = MongoClient(uri, server_api=ServerApi("1"))
+
+        database = client["app"]
+        roomsCollection = database["rooms"]
+
+        data = request.json
+
+        room = roomsCollection.find_one({"code": data["roomCode"]})
+
+        if not room:
+            return jsonify({"error": "Room not found"}), 404
+
+        room["members"].pop(data["memberEmail"])
+        roomsCollection.update_one({"code": data["roomCode"]}, {"$set": {"members": room["members"]}})
+        return jsonify(
+            {"message": "Member deleted successfully",
+             "room": {"name": room["name"], "members": room["members"], "questions": room["questions"],
+                      "code": room["code"]}}), 200
+    except Exception as e:
+        app.logger.error(e)
         return jsonify({"error": str(e)}), 500
 
 

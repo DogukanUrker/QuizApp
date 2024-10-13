@@ -1,6 +1,7 @@
 import React from "react";
 import axios from "axios";
 import { Button } from "@/components/ui/button";
+import { LogOut } from "lucide-react";
 
 const LogoutButton: React.FC = () => {
   const handleLogout = async () => {
@@ -25,7 +26,11 @@ const LogoutButton: React.FC = () => {
     }
   };
 
-  return <Button onClick={handleLogout}>Logout</Button>;
+  return (
+    <Button variant="ghost" className="p-0 m-0 w-fit" onClick={handleLogout}>
+      <LogOut className={"h-[1.2rem] w-[1.2rem] mr-2"} /> Logout
+    </Button>
+  );
 };
 
 export default LogoutButton;
