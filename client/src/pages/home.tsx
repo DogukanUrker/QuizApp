@@ -114,7 +114,7 @@ const Home = () => {
             <AlertDialogTitle>Join Room</AlertDialogTitle>
           </AlertDialogHeader>
           <AlertDialogDescription>
-            Please enter the room code
+            Please enter the room code.
           </AlertDialogDescription>
           <Input
             id="room-code"

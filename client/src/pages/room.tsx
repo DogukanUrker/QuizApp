@@ -222,8 +222,8 @@ const Room: React.FC = () => {
                 <AlertDialogHeader>
                   <AlertDialogTitle>Exit Room</AlertDialogTitle>
                   <AlertDialogDescription>
-                    Are you sure you want to exit this room? This action cannot
-                    be undone.
+                    Are you sure you want to exit this room? You can rejoin at
+                    any time.
                   </AlertDialogDescription>
                 </AlertDialogHeader>
                 <AlertDialogFooter>
