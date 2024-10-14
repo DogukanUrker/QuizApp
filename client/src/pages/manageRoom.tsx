@@ -81,6 +81,7 @@ const ManageRoom: React.FC = () => {
   const [banningUserEmail, setBanningUserEmail] = useState<string | null>(null);
   const [bannedUserEmail, setBannedUserEmail] = useState<string | null>(null);
   const [deletingRoom, setDeletingRoom] = useState(false);
+  const [deletedRoom, setDeletedRoom] = useState(false);
 
   useEffect(() => {
     const fetchRoomData = async () => {
@@ -304,6 +305,7 @@ const ManageRoom: React.FC = () => {
           },
         },
       );
+      setDeletedRoom(true);
       toast.success("Room deleted successfully.");
       setTimeout(() => {
         window.location.href = "/";
@@ -553,7 +555,13 @@ const ManageRoom: React.FC = () => {
               <AlertDialogFooter>
                 <AlertDialogCancel>Cancel</AlertDialogCancel>
                 <Button onClick={handleDeleteRoom} disabled={deletingRoom}>
-                  {deletingRoom ? <Spinner content="Deleting..." /> : "Delete"}
+                  {deletingRoom ? (
+                    <Spinner content="Deleting..." />
+                  ) : deletedRoom ? (
+                    <Check className="h-4 w-4" />
+                  ) : (
+                    "Delete"
+                  )}
                 </Button>
               </AlertDialogFooter>
             </AlertDialogContent>
