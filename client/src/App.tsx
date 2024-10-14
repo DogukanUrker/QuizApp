@@ -1,6 +1,7 @@
 import Auth from "./pages/auth";
 import Home from "./pages/home";
 import Room from "@/pages/room.tsx";
+import NotFound from "@/pages/404.tsx";
 import { BrowserRouter as Router, Route, Routes } from "react-router-dom";
 import { ThemeProvider } from "@/components/theme-provider.tsx";
 import { ModeToggle } from "@/components/mode-toggle.tsx";
@@ -33,6 +34,7 @@ const App = () => {
               <Route path="/room/:roomCode/manage" element={<ManageRoom />} />
             </>
           )}
+          <Route path="*" element={<NotFound />} />
         </Routes>
         <Toaster />
       </Router>
