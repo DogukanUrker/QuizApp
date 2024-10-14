@@ -2,13 +2,37 @@ import {
   DropdownMenu,
   DropdownMenuContent,
   DropdownMenuItem,
+  DropdownMenuLabel,
+  DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu.tsx";
 import { Button } from "@/components/ui/button.tsx";
-import LogoutButton from "@/components/logout-button.tsx";
-import { UserRound } from "lucide-react";
+import { House, LogOut, UserRound } from "lucide-react";
+import axios from "axios";
 
 export function Profile() {
+  const name: string | null = localStorage.getItem("userName");
+  const handleLogout = async () => {
+    const token = localStorage.getItem("token");
+
+    if (token) {
+      try {
+        await axios.post(
+          "http://192.168.6.31:8080/logout",
+          {},
+          {
+            headers: {
+              Authorization: `Bearer ${token}`,
+            },
+          },
+        );
+        localStorage.removeItem("token");
+        window.location.href = "/login";
+      } catch (error) {
+        console.error("Error logging out:", error);
+      }
+    }
+  };
   return (
     <>
       <DropdownMenu>
@@ -20,8 +44,21 @@ export function Profile() {
             </Button>
           </DropdownMenuTrigger>
           <DropdownMenuContent align="end">
-            <DropdownMenuItem>
-              <LogoutButton />
+            <DropdownMenuLabel>
+              {name ? name.replace(/"/g, "") : "Guest"}
+            </DropdownMenuLabel>
+            <DropdownMenuSeparator />
+            <DropdownMenuItem
+              className={"p-2 mb-1 cursor-pointer"}
+              onClick={() => (window.location.href = "/")}
+            >
+              <House className={"h-[1.2rem] w-[1.2rem] mr-2"} /> Home
+            </DropdownMenuItem>
+            <DropdownMenuItem
+              className={"p-2 mt-1 cursor-pointer"}
+              onClick={handleLogout}
+            >
+              <LogOut className={"h-[1.2rem] w-[1.2rem] mr-2"} /> Logout
             </DropdownMenuItem>
           </DropdownMenuContent>
         </div>

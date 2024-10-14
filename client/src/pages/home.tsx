@@ -14,7 +14,7 @@ import axios from "axios";
 import Spinner from "@/components/loading-spinner.tsx";
 
 const Home = () => {
-  const [loading, setLoading] = useState(false); // Loading state
+  const [loading, setLoading] = useState(false);
   const [showJoinDialog, setShowJoinDialog] = useState(false);
   const [showCreateDialog, setShowCreateDialog] = useState(false);
 
@@ -99,9 +99,15 @@ const Home = () => {
   };
 
   return (
-    <div>
-      <Button onClick={createRoomDialog}>Create Room</Button>
-      <Button onClick={joinRoomDialog}>Join Room</Button>
+    <div className="flex flex-col items-center justify-center min-h-screen p-4">
+      <div className="space-y-4">
+        <Button onClick={createRoomDialog} className="w-full">
+          Create Room
+        </Button>
+        <Button onClick={joinRoomDialog} className="w-full">
+          Join Room
+        </Button>
+      </div>
       <AlertDialog open={showJoinDialog} onOpenChange={setShowJoinDialog}>
         <AlertDialogContent>
           <AlertDialogHeader>
@@ -116,7 +122,8 @@ const Home = () => {
             type="text"
             autoComplete="off"
             required
-          ></Input>
+            className="mt-2"
+          />
           <AlertDialogFooter>
             <AlertDialogCancel onClick={() => setShowJoinDialog(false)}>
               Cancel
@@ -141,7 +148,8 @@ const Home = () => {
             type="text"
             autoComplete="off"
             required
-          ></Input>
+            className="mt-2"
+          />
           <AlertDialogFooter>
             <AlertDialogCancel onClick={() => setShowCreateDialog(false)}>
               Cancel
