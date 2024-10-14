@@ -373,5 +373,33 @@ def loadUsers():
         return jsonify({"error": str(e)}), 500
 
 
+@app.route("/exitRoom", methods=["POST"])
+@jwt_required()
+def exitRoom():
+    try:
+        app.logger.info("Exiting room")
+        client = MongoClient(uri, server_api=ServerApi("1"))
+
+        database = client["app"]
+        roomsCollection = database["rooms"]
+
+        data = request.json
+        room = roomsCollection.find_one({"code": data["roomCode"]})
+
+        if not room:
+            return jsonify({"error": "Room not found"}), 404
+
+        room["members"] = [m for m in room["members"] if m.get("email") != data["email"]]
+        roomsCollection.update_one({"code": data["roomCode"]},
+                                   {"$set": {"members": room["members"]}})
+        return jsonify(
+            {"message": "User exited successfully",
+             "room": {"name": room["name"], "members": room["members"], "questions": room["questions"],
+                      "code": room["code"]}}), 200
+    except Exception as e:
+        app.logger.error(e)
+        return jsonify({"error": str(e)}), 500
+
+
 if __name__ == "__main__":
     app.run(debug=True, host="192.168.6.31", port=8080)
