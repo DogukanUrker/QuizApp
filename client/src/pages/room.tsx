@@ -20,8 +20,9 @@ interface RoomData {
     code: string;
     owner: {
       name: string;
+      email: string;
     };
-    members: { name: string }[];
+    members: { name: string; email: string }[];
   };
 }
 
@@ -34,10 +35,14 @@ const Room: React.FC = () => {
   useEffect(() => {
     const fetchRoomData = async () => {
       const token = localStorage.getItem("token");
+      const email = localStorage.getItem("userEmail");
       try {
         const response = await axios.post(
           "http://192.168.6.31:8080/room",
-          { roomCode },
+          {
+            roomCode: roomCode,
+            email: email,
+          },
           {
             headers: {
               Authorization: `Bearer ${token}`,
@@ -46,15 +51,49 @@ const Room: React.FC = () => {
           },
         );
         setRoomData(response.data);
-      } catch (err) {
-        setError(err.message);
-        toast.error("Failed to fetch room data.");
+      } catch (err: unknown) {
+        if (err instanceof Error) {
+          setError(err.message);
+          toast.error("Failed to fetch room data.");
+        }
       } finally {
         setLoading(false);
       }
     };
 
     fetchRoomData();
+  }, [roomCode]);
+
+  useEffect(() => {
+    const fetchUsers = async () => {
+      const token = localStorage.getItem("token");
+      try {
+        const response = await axios.post(
+          "http://192.168.6.31:8080/loadUsers",
+          { roomCode },
+          {
+            headers: {
+              Authorization: `Bearer ${token}`,
+              "Content-Type": "application/json",
+            },
+          },
+        );
+        setRoomData((prevData) => ({
+          ...prevData,
+          room: {
+            ...prevData?.room,
+            members: response.data.users,
+          },
+        }));
+      } catch (err: unknown) {
+        if (err instanceof Error) {
+          toast.error("Failed to fetch users.");
+        }
+      }
+    };
+
+    const intervalId = setInterval(fetchUsers, 3000);
+    return () => clearInterval(intervalId);
   }, [roomCode]);
 
   if (loading)
@@ -91,18 +130,18 @@ const Room: React.FC = () => {
         </div>
       )}
       <div className="flex items-center justify-center min-h-screen">
-        <div>
-          <div className="mb-2">
+        <div className="p-6 rounded-lg shadow-lg">
+          <div className="mb-4">
             <Label className="block">Name</Label>
-            <p className="text-xl">{roomData?.room.name}</p>
+            <p className="text-xl font-semibold">{roomData?.room.name}</p>
           </div>
-          <div className="mb-2">
+          <div className="mb-4">
             <Label className="block">Code</Label>
-            <div className="flex items-stretch" onClick={handleCopyCode}>
+            <div className="flex items-center" onClick={handleCopyCode}>
               <TooltipProvider>
                 <Tooltip>
                   <TooltipTrigger asChild>
-                    <p className="text-xl cursor-pointer">
+                    <p className="text-xl cursor-pointer text-blue-500">
                       {roomData?.room.code}
                     </p>
                   </TooltipTrigger>
@@ -113,22 +152,22 @@ const Room: React.FC = () => {
               </TooltipProvider>
             </div>
           </div>
-          <div className="mb-2">
+          <div className="mb-4">
             <Label className="block">Owner</Label>
-            <p className="text-xl">
+            <p className="text-xl font-semibold">
               {roomData?.room.owner.name.replace(/"/g, "")}
             </p>
           </div>
-          <ScrollArea className="h-72 w-48 rounded-md border">
-            <div className="p-4">
-              <h4 className="mb-4 text-sm font-medium leading-none">Members</h4>
-              {roomData?.room.members.map((member) => (
-                <>
-                  <div className="text-sm">{member.name.replace(/"/g, "")}</div>
-                  <Separator className="my-2" />
-                </>
-              ))}
-            </div>
+          <ScrollArea className="h-72 w-64 rounded-md border p-4">
+            <h4 className="mb-4 text-sm font-medium leading-none">
+              {roomData?.room.members.length} Members
+            </h4>
+            {roomData?.room.members.map((member) => (
+              <div key={member.email} className="mb-2">
+                <div className="text-sm">{member.name.replace(/"/g, "")}</div>
+                <Separator className="my-2" />
+              </div>
+            ))}
           </ScrollArea>
         </div>
       </div>

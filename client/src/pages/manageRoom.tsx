@@ -1,7 +1,7 @@
 import React, { useEffect, useState } from "react";
-import { useParams } from "react-router-dom";
 import axios from "axios";
 import Spinner from "@/components/loading-spinner.tsx";
+import { useParams } from "react-router-dom";
 import { Label } from "@/components/ui/label";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { Separator } from "@/components/ui/separator";
@@ -33,7 +33,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
-import { Check, Trash } from "lucide-react";
+import { Check, Trash, UserX } from "lucide-react";
 
 interface RoomData {
   room: {
@@ -42,7 +42,7 @@ interface RoomData {
     owner: {
       name: string;
     };
-    members: { name: string }[];
+    members: { name: string; email: string }[];
   };
 }
 
@@ -78,14 +78,21 @@ const ManageRoom: React.FC = () => {
   );
   const [addingQuestion, setAddingQuestion] = useState(false);
   const [addedQuestion, setAddedQuestion] = useState(false);
+  const [banningUserEmail, setBanningUserEmail] = useState<string | null>(null);
+  const [bannedUserEmail, setBannedUserEmail] = useState<string | null>(null);
+  const [deletingRoom, setDeletingRoom] = useState(false);
 
   useEffect(() => {
     const fetchRoomData = async () => {
       const token = localStorage.getItem("token");
+      const email = localStorage.getItem("userEmail");
       try {
         const response = await axios.post(
           "http://192.168.6.31:8080/room",
-          { roomCode },
+          {
+            roomCode: roomCode,
+            email: email,
+          },
           {
             headers: {
               Authorization: `Bearer ${token}`,
@@ -124,6 +131,36 @@ const ManageRoom: React.FC = () => {
 
     fetchRoomData();
     fetchQuestions();
+  }, [roomCode]);
+
+  useEffect(() => {
+    const fetchUsers = async () => {
+      const token = localStorage.getItem("token");
+      try {
+        const response = await axios.post(
+          "http://192.168.6.31:8080/loadUsers",
+          { roomCode },
+          {
+            headers: {
+              Authorization: `Bearer ${token}`,
+              "Content-Type": "application/json",
+            },
+          },
+        );
+        setRoomData((prevData) => ({
+          ...prevData,
+          room: {
+            ...prevData?.room,
+            members: response.data.users,
+          },
+        }));
+      } catch (err) {
+        toast.error("Failed to fetch users.");
+      }
+    };
+
+    const intervalId = setInterval(fetchUsers, 3000);
+    return () => clearInterval(intervalId);
   }, [roomCode]);
 
   if (loading)
@@ -182,7 +219,7 @@ const ManageRoom: React.FC = () => {
         },
       );
       toast.success("Question added successfully.");
-      setAddedQuestion(true); // Set the added question state
+      setAddedQuestion(true);
       setTimeout(() => {
         window.location.reload();
       }, 1500);
@@ -194,7 +231,7 @@ const ManageRoom: React.FC = () => {
   };
 
   const handleDeleteQuestion = async (questionId: string) => {
-    setDeletingQuestionId(questionId); // Set the deleting question ID
+    setDeletingQuestionId(questionId);
     const token = localStorage.getItem("token");
     try {
       await axios.post(
@@ -222,6 +259,62 @@ const ManageRoom: React.FC = () => {
     }
   };
 
+  const handleBanUser = async (email: string) => {
+    setBanningUserEmail(email);
+    const token = localStorage.getItem("token");
+    try {
+      await axios.post(
+        "http://192.168.6.31:8080/banUser",
+        {
+          email: email,
+          roomCode: roomCode,
+        },
+        {
+          headers: {
+            Authorization: `Bearer ${token}`,
+            "Content-Type": "application/json",
+          },
+        },
+      );
+      toast.success("User banned successfully.");
+      setBannedUserEmail(email);
+      setTimeout(() => {
+        window.location.reload();
+      }, 1500);
+    } catch (err) {
+      toast.error("Failed to ban user.");
+    } finally {
+      setBanningUserEmail(null);
+    }
+  };
+
+  const handleDeleteRoom = async () => {
+    setDeletingRoom(true);
+    const token = localStorage.getItem("token");
+    try {
+      await axios.post(
+        "http://192.168.6.31:8080/deleteRoom",
+        {
+          roomCode: roomCode,
+        },
+        {
+          headers: {
+            Authorization: `Bearer ${token}`,
+            "Content-Type": "application/json",
+          },
+        },
+      );
+      toast.success("Room deleted successfully.");
+      setTimeout(() => {
+        window.location.href = "/";
+      }, 1500);
+    } catch (err) {
+      toast.error("Failed to delete room.");
+    } finally {
+      setDeletingRoom(false);
+    }
+  };
+
   if (localStorage.getItem("userEmail") !== roomData?.room.owner.email) {
     return (
       <div className="flex items-center justify-center min-h-screen">
@@ -231,15 +324,15 @@ const ManageRoom: React.FC = () => {
   }
 
   return (
-    <div className="flex items-center justify-center min-h-screen">
-      <div>
-        <div className="mb-2">
-          <Label className="block">Name</Label>
+    <div className="flex items-center justify-center min-h-screen p-4">
+      <div className="p-6 rounded-lg shadow-lg w-full max-w-3xl">
+        <div className="mb-4">
+          <Label className="block text-lg font-semibold">Room Name</Label>
           <p className="text-xl">{roomData?.room.name}</p>
         </div>
-        <div className="mb-2">
-          <Label className="block">Code</Label>
-          <div className="flex items-stretch" onClick={handleCopyCode}>
+        <div className="mb-4">
+          <Label className="block text-lg font-semibold">Room Code</Label>
+          <div className="flex items-center" onClick={handleCopyCode}>
             <TooltipProvider>
               <Tooltip>
                 <TooltipTrigger asChild>
@@ -254,20 +347,51 @@ const ManageRoom: React.FC = () => {
             </TooltipProvider>
           </div>
         </div>
-        <div className="mb-2">
-          <Label className="block">Owner</Label>
+        <div className="mb-4">
+          <Label className="block text-lg font-semibold">Owner</Label>
           <p className="text-xl">
             {roomData?.room.owner.name.replace(/"/g, "")}
           </p>
         </div>
-        <ScrollArea className="h-72 w-56 rounded-md border">
+        <ScrollArea className="h-72 w-full rounded-md border mb-4">
           <div className="p-4">
-            <h4 className="mb-4 text-sm font-medium leading-none">Members</h4>
+            <h4 className="mb-4 text-sm font-medium leading-none">
+              {roomData?.room.members.length} Members
+            </h4>
             {roomData?.room.members.map((member) => (
-              <>
-                <div className="text-sm">{member.name.replace(/"/g, "")}</div>
+              <div key={member.email}>
+                <div className="flex justify-between items-center">
+                  <div className="text-sm">{member.name.replace(/"/g, "")}</div>
+                  <AlertDialog>
+                    <AlertDialogTrigger asChild>
+                      <Button variant="ghost" className="py-2 px-4">
+                        <UserX className="h-4 w-4" />
+                      </Button>
+                    </AlertDialogTrigger>
+                    <AlertDialogContent>
+                      <AlertDialogHeader>
+                        <AlertDialogTitle>Ban User</AlertDialogTitle>
+                        <AlertDialogDescription>
+                          Are you sure you want to ban this user?
+                        </AlertDialogDescription>
+                      </AlertDialogHeader>
+                      <AlertDialogFooter>
+                        <AlertDialogCancel>Cancel</AlertDialogCancel>
+                        <Button onClick={() => handleBanUser(member.email)}>
+                          {banningUserEmail === member.email ? (
+                            <Spinner content="Banning..." />
+                          ) : bannedUserEmail === member.email ? (
+                            <Check className="h-4 w-4" />
+                          ) : (
+                            "Ban"
+                          )}
+                        </Button>
+                      </AlertDialogFooter>
+                    </AlertDialogContent>
+                  </AlertDialog>
+                </div>
                 <Separator className="my-2" />
-              </>
+              </div>
             ))}
           </div>
         </ScrollArea>
@@ -358,8 +482,11 @@ const ManageRoom: React.FC = () => {
               </AlertDialogFooter>
             </AlertDialogContent>
           </AlertDialog>
-          <ScrollArea className="h-96 w-56 rounded-md border">
+          <ScrollArea className="h-96 w-full rounded-md border mt-4">
             <div className="p-4">
+              <h4 className="mb-4 text-sm font-medium leading-none">
+                {questions.length} Questions
+              </h4>
               {questions.map((question, index) => (
                 <div key={index} className="mb-4 relative">
                   <p className="font-bold">
@@ -373,23 +500,64 @@ const ManageRoom: React.FC = () => {
                   </ul>
                   <p className="italic">Correct Answer: {question.correct}</p>
                   <Separator className="my-2" />
-                  <Button
-                    variant="ghost"
-                    className="absolute top-0 right-0"
-                    onClick={() => handleDeleteQuestion(question.id)}
-                  >
-                    {deletingQuestionId === question.id ? (
-                      <Spinner content="Deleting..." />
-                    ) : deletedQuestionId === question.id ? (
-                      <Check className="h-4 w-4" />
-                    ) : (
-                      <Trash className="h-4 w-4" />
-                    )}
-                  </Button>
+                  <AlertDialog>
+                    <AlertDialogTrigger asChild>
+                      <Button
+                        variant="ghost"
+                        className="absolute top-0 right-0"
+                      >
+                        <Trash className="h-4 w-4" />
+                      </Button>
+                    </AlertDialogTrigger>
+                    <AlertDialogContent>
+                      <AlertDialogHeader>
+                        <AlertDialogTitle>Delete Question</AlertDialogTitle>
+                        <AlertDialogDescription>
+                          Are you sure you want to delete this question?
+                        </AlertDialogDescription>
+                      </AlertDialogHeader>
+                      <AlertDialogFooter>
+                        <AlertDialogCancel>Cancel</AlertDialogCancel>
+                        <Button
+                          onClick={() => handleDeleteQuestion(question.id)}
+                        >
+                          {deletingQuestionId === question.id ? (
+                            <Spinner content="Deleting..." />
+                          ) : deletedQuestionId === question.id ? (
+                            <Check className="h-4 w-4" />
+                          ) : (
+                            "Delete"
+                          )}
+                        </Button>
+                      </AlertDialogFooter>
+                    </AlertDialogContent>
+                  </AlertDialog>
                 </div>
               ))}
             </div>
           </ScrollArea>
+        </div>
+        <div className="mt-4">
+          <AlertDialog>
+            <AlertDialogTrigger asChild>
+              <Button variant="destructive">Delete Room</Button>
+            </AlertDialogTrigger>
+            <AlertDialogContent>
+              <AlertDialogHeader>
+                <AlertDialogTitle>Delete Room</AlertDialogTitle>
+                <AlertDialogDescription>
+                  Are you sure you want to delete this room? This action cannot
+                  be undone.
+                </AlertDialogDescription>
+              </AlertDialogHeader>
+              <AlertDialogFooter>
+                <AlertDialogCancel>Cancel</AlertDialogCancel>
+                <Button onClick={handleDeleteRoom} disabled={deletingRoom}>
+                  {deletingRoom ? <Spinner content="Deleting..." /> : "Delete"}
+                </Button>
+              </AlertDialogFooter>
+            </AlertDialogContent>
+          </AlertDialog>
         </div>
       </div>
     </div>

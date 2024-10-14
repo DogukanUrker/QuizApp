@@ -137,12 +137,12 @@ def joinRoom():
 
         room = roomsCollection.find_one({"code": data["roomCode"]})
 
-        if not room:
-            return jsonify({"error": "Room not found"}), 404
+        if data["email"] in room.get("bannedUsers", []):
+            return jsonify({"error": "User is banned from this room"}), 403
 
         if not any(member["email"] == data["email"] for member in room["members"]):
             room["members"].append({"name": data["name"], "email": data["email"]})
-        roomsCollection.update_one({"code": data["roomCode"]}, {"$set": {"members": room["members"]}})
+            roomsCollection.update_one({"code": data["roomCode"]}, {"$set": {"members": room["members"]}})
 
         return jsonify(
             {"message": "Room joined successfully",
@@ -198,6 +198,10 @@ def getRoom():
 
         if not room:
             return jsonify({"error": "Room not found"}), 404
+
+        if data["email"] in room.get("bannedUsers", []) or not any(
+                member["email"] == data["email"] for member in room["members"]):
+            return jsonify({"error": "Access denied"}), 403
 
         return jsonify(
             {"message": "Room found",
@@ -288,11 +292,11 @@ def getQuestion():
         return jsonify({"error": str(e)}), 500
 
 
-@app.route("/deleteMember", methods=["POST"])
+@app.route("/deleteRoom", methods=["POST"])
 @jwt_required()
-def deleteMember():
+def deleteRoom():
     try:
-        app.logger.info("Deleting member")
+        app.logger.info("Deleting room")
         client = MongoClient(uri, server_api=ServerApi("1"))
 
         database = client["app"]
@@ -305,12 +309,65 @@ def deleteMember():
         if not room:
             return jsonify({"error": "Room not found"}), 404
 
-        room["members"].pop(data["memberEmail"])
-        roomsCollection.update_one({"code": data["roomCode"]}, {"$set": {"members": room["members"]}})
+        roomsCollection.delete_one({"code": data["roomCode"]})
         return jsonify(
-            {"message": "Member deleted successfully",
+            {"message": "Room deleted successfully"}), 200
+    except Exception as e:
+        app.logger.error(e)
+        return jsonify({"error": str(e)}), 500
+
+
+@app.route("/banUser", methods=["POST"])
+@jwt_required()
+def banUser():
+    try:
+        app.logger.info("Banning user")
+        client = MongoClient(uri, server_api=ServerApi("1"))
+
+        database = client["app"]
+        roomsCollection = database["rooms"]
+
+        data = request.json
+
+        room = roomsCollection.find_one({"code": data["roomCode"]})
+
+        if not room:
+            return jsonify({"error": "Room not found"}), 404
+
+        room["members"] = [m for m in room["members"] if m.get("email") != data["email"]]
+        if "bannedUsers" not in room:
+            room["bannedUsers"] = []
+        room["bannedUsers"].append(data["email"])
+        roomsCollection.update_one({"code": data["roomCode"]},
+                                   {"$set": {"members": room["members"], "bannedUsers": room["bannedUsers"]}})
+        return jsonify(
+            {"message": "User banned successfully",
              "room": {"name": room["name"], "members": room["members"], "questions": room["questions"],
                       "code": room["code"]}}), 200
+    except Exception as e:
+        app.logger.error(e)
+        return jsonify({"error": str(e)}), 500
+
+
+@app.route("/loadUsers", methods=["POST"])
+@jwt_required()
+def loadUsers():
+    try:
+        app.logger.info("Loading users")
+        client = MongoClient(uri, server_api=ServerApi("1"))
+
+        database = client["app"]
+        roomsCollection = database["rooms"]
+
+        data = request.json
+        room = roomsCollection.find_one({"code": data["roomCode"]})
+
+        if not room:
+            return jsonify({"error": "Room not found"}), 404
+
+        return jsonify(
+            {"message": "Users found",
+             "users": room["members"]}), 200
     except Exception as e:
         app.logger.error(e)
         return jsonify({"error": str(e)}), 500
