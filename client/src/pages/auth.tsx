@@ -184,7 +184,7 @@ const Auth = () => {
                 {loading ? <Spinner content="Login" /> : "Login"}
               </Button>
               <div className={"text-sm"}>
-                Don`t want to login?
+                Don't want to login?
                 <Button onClick={joinRoomDialog} variant="link" className="p-1">
                   Continue as guest
                 </Button>
@@ -227,7 +227,7 @@ const Auth = () => {
                 {loading ? <Spinner content="Signup" /> : "Signup"}
               </Button>
               <div className={"text-sm"}>
-                Don`t want to signup?
+                Don't want to signup?
                 <Button onClick={joinRoomDialog} variant="link" className="p-1">
                   Continue as guest
                 </Button>
