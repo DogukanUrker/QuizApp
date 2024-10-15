@@ -1,3 +1,4 @@
+from crypt import methods
 from datetime import timedelta
 from flask import Flask, jsonify, request
 from flask_cors import CORS
@@ -152,6 +153,32 @@ def joinRoom():
         return jsonify({"error": str(e)}), 500
 
 
+@app.route("/joinGuest", methods=["POST"])
+def joinGuest():
+    try:
+        app.logger.info("Joining as guest")
+        client = MongoClient(uri, server_api=ServerApi("1"))
+        database = client["app"]
+        roomsCollection = database["rooms"]
+
+        data = request.json
+
+        room = roomsCollection.find_one({"code": data["roomCode"]})
+
+        room["members"].append({"name": data["name"], "email": "guest@app.com"})
+        roomsCollection.update_one({"code": data["roomCode"]}, {"$set": {"members": room["members"]}})
+
+        if not room:
+            return jsonify({"error": "Room not found"}), 404
+
+        return jsonify(
+            {"message": "Room found",
+             "room": {"name": room["name"], "members": room["members"], "questions": room["questions"],
+                      "code": room["code"], "guest": {"name": data["name"]}}}), 200
+    except Exception as e:
+        return jsonify({"error": str(e)}), 500
+
+
 @app.route("/addQuestion", methods=["POST"])
 @jwt_required()
 def addQuestion():
@@ -183,7 +210,6 @@ def addQuestion():
 
 
 @app.route("/room", methods=["POST"])
-@jwt_required()
 def getRoom():
     try:
         app.logger.info("Getting room info")
@@ -214,7 +240,6 @@ def getRoom():
 
 
 @app.route("/getQuestions", methods=["POST"])
-@jwt_required()
 def getQuestions():
     try:
         app.logger.info("Getting questions")
@@ -267,7 +292,6 @@ def deleteQuestion():
 
 
 @app.route("/getQuestion", methods=["POST"])
-@jwt_required()
 def getQuestion():
     try:
         app.logger.info("Getting question")
@@ -350,7 +374,6 @@ def banUser():
 
 
 @app.route("/loadUsers", methods=["POST"])
-@jwt_required()
 def loadUsers():
     try:
         app.logger.info("Loading users")
@@ -374,7 +397,6 @@ def loadUsers():
 
 
 @app.route("/exitRoom", methods=["POST"])
-@jwt_required()
 def exitRoom():
     try:
         app.logger.info("Exiting room")

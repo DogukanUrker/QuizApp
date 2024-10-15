@@ -13,6 +13,7 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import {
   AlertDialog,
   AlertDialogAction,
+  AlertDialogCancel,
   AlertDialogContent,
   AlertDialogDescription,
   AlertDialogFooter,
@@ -32,9 +33,50 @@ const Auth = () => {
     signupPassword: "",
   });
 
-  const [loading, setLoading] = useState(false); // Loading state
   const [activeTab, setActiveTab] = useState("signup"); // Active tab state
   const [showDialog, setShowDialog] = useState(false); // Dialog state
+  const [loading, setLoading] = useState(false);
+  const [showJoinDialog, setShowJoinDialog] = useState(false);
+
+  const joinRoomDialog = () => {
+    setShowJoinDialog(true);
+  };
+
+  const joinRoom = async () => {
+    setLoading(true);
+    const nameElement = document.getElementById("username") as HTMLInputElement;
+    const name = nameElement?.value;
+
+    try {
+      const response = await axios.post(
+        "http://192.168.6.31:8080/joinGuest",
+        {
+          roomCode: (document.getElementById("room-code") as HTMLInputElement)
+            ?.value,
+          name: name,
+        },
+        {
+          headers: {
+            "Content-Type": "application/json",
+          },
+        },
+      );
+
+      if (response.data.error) {
+        console.log(response.data.message);
+      } else {
+        console.log(response.data);
+        localStorage.setItem("room", JSON.stringify(response.data));
+        localStorage.setItem("userName", name || "Guest");
+        localStorage.setItem("userEmail", "guest@app.com");
+        window.location.href = "/room/" + response.data.room.code;
+      }
+    } catch (error) {
+      console.error("Error during join room request:", error);
+    } finally {
+      setLoading(false);
+    }
+  };
 
   useEffect(() => {
     if (window.location.pathname === "/login") {
@@ -133,7 +175,7 @@ const Auth = () => {
                 />
               </div>
             </CardContent>
-            <CardFooter>
+            <CardFooter className="flex-col">
               <Button
                 onClick={handleLogin}
                 className="w-full"
@@ -141,6 +183,12 @@ const Auth = () => {
               >
                 {loading ? <Spinner content="Login" /> : "Login"}
               </Button>
+              <div className={"text-sm"}>
+                Don`t want to login?
+                <Button onClick={joinRoomDialog} variant="link" className="p-1">
+                  Continue as guest
+                </Button>
+              </div>
             </CardFooter>
           </Card>
         </TabsContent>
@@ -170,7 +218,7 @@ const Auth = () => {
                 />
               </div>
             </CardContent>
-            <CardFooter>
+            <CardFooter className={"flex-col"}>
               <Button
                 onClick={handleSignup}
                 className="w-full"
@@ -178,9 +226,49 @@ const Auth = () => {
               >
                 {loading ? <Spinner content="Signup" /> : "Signup"}
               </Button>
+              <div className={"text-sm"}>
+                Don`t want to signup?
+                <Button onClick={joinRoomDialog} variant="link" className="p-1">
+                  Continue as guest
+                </Button>
+              </div>
             </CardFooter>
           </Card>
         </TabsContent>
+        <AlertDialog open={showJoinDialog} onOpenChange={setShowJoinDialog}>
+          <AlertDialogContent>
+            <AlertDialogHeader>
+              <AlertDialogTitle>Play as Guest</AlertDialogTitle>
+            </AlertDialogHeader>
+            <AlertDialogDescription>
+              Pick a name and enter the room code.
+            </AlertDialogDescription>
+            <Input
+              id="username"
+              placeholder="Name"
+              type="text"
+              autoComplete="off"
+              required
+              className="mt-2"
+            />
+            <Input
+              id="room-code"
+              placeholder="Room code"
+              type="text"
+              autoComplete="off"
+              required
+              className="mt-2"
+            />
+            <AlertDialogFooter>
+              <AlertDialogCancel onClick={() => setShowJoinDialog(false)}>
+                Cancel
+              </AlertDialogCancel>
+              <Button onClick={joinRoom} disabled={loading}>
+                {loading ? <Spinner content="Join" /> : "Join"}
+              </Button>
+            </AlertDialogFooter>
+          </AlertDialogContent>
+        </AlertDialog>
       </Tabs>
       <AlertDialog open={showDialog} onOpenChange={setShowDialog}>
         <AlertDialogContent>

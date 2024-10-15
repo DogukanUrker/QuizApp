@@ -47,7 +47,6 @@ const Room: React.FC = () => {
 
   useEffect(() => {
     const fetchRoomData = async () => {
-      const token = localStorage.getItem("token");
       const email = localStorage.getItem("userEmail");
       try {
         const response = await axios.post(
@@ -58,7 +57,6 @@ const Room: React.FC = () => {
           },
           {
             headers: {
-              Authorization: `Bearer ${token}`,
               "Content-Type": "application/json",
             },
           },
@@ -79,14 +77,12 @@ const Room: React.FC = () => {
 
   useEffect(() => {
     const fetchUsers = async () => {
-      const token = localStorage.getItem("token");
       try {
         const response = await axios.post(
           "http://192.168.6.31:8080/loadUsers",
           { roomCode },
           {
             headers: {
-              Authorization: `Bearer ${token}`,
               "Content-Type": "application/json",
             },
           },
@@ -129,7 +125,6 @@ const Room: React.FC = () => {
   };
 
   const handleExitRoom = async () => {
-    const token = localStorage.getItem("token");
     const email = localStorage.getItem("userEmail");
     setExitingRoom(true);
     try {
@@ -141,7 +136,6 @@ const Room: React.FC = () => {
         },
         {
           headers: {
-            Authorization: `Bearer ${token}`,
             "Content-Type": "application/json",
           },
         },
