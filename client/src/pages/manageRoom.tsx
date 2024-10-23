@@ -86,6 +86,12 @@ const ManageRoom: React.FC = () => {
   const [deletingRoom, setDeletingRoom] = useState(false);
   const [deletedRoom, setDeletedRoom] = useState(false);
 
+  const [startingGame, setStartingGame] = useState(false);
+  const [startedGame, setStartedGame] = useState(false);
+
+  const [endingGame, setEndingGame] = useState(false);
+  const [endedGame, setEndedGame] = useState(false);
+
   useEffect(() => {
     const fetchRoomData = async () => {
       const token = localStorage.getItem("token");
@@ -322,6 +328,62 @@ const ManageRoom: React.FC = () => {
     }
   };
 
+  const handleStartGame = async () => {
+    setStartingGame(true);
+    const token = localStorage.getItem("token");
+    try {
+      await axios.post(
+        apiURL + "startGame",
+        {
+          roomCode: roomCode,
+        },
+        {
+          headers: {
+            Authorization: `Bearer ${token}`,
+            "Content-Type": "application/json",
+          },
+        },
+      );
+      setStartedGame(true);
+      toast.success("Game started successfully.");
+      setTimeout(() => {
+        window.location.href = "/room/" + roomCode + "/leaderboard";
+      }, 1500);
+    } catch (err) {
+      toast.error("Failed to start game.");
+    } finally {
+      setStartingGame(false);
+    }
+  };
+
+  const handleEndGame = async () => {
+    setEndingGame(true);
+    const token = localStorage.getItem("token");
+    try {
+      await axios.post(
+        apiURL + "endGame",
+        {
+          roomCode: roomCode,
+        },
+        {
+          headers: {
+            Authorization: `Bearer ${token}`,
+            "Content-Type": "application/json",
+          },
+        },
+      );
+      setEndedGame(true);
+      toast.success("Game ended successfully.");
+      setTimeout(() => {
+        window.location.href = "/room/" + roomCode + "/leaderboard";
+      }, 1500);
+    } catch (err) {
+      toast.error("Failed to end game.");
+    } finally {
+      setEndingGame(false);
+    }
+  };
+
   if (localStorage.getItem("userEmail") !== roomData?.room.owner.email) {
     return (
       <div className="flex items-center justify-center min-h-screen">
@@ -333,32 +395,42 @@ const ManageRoom: React.FC = () => {
   return (
     <div className="flex items-center justify-center min-h-screen p-4">
       <div className="p-6 rounded-lg shadow-lg w-full max-w-3xl">
-        <div className="mb-4">
-          <Label className="block text-lg font-semibold">Room Name</Label>
-          <p className="text-xl">{roomData?.room.name}</p>
-        </div>
-        <div className="mb-4">
-          <Label className="block text-lg font-semibold">Room Code</Label>
-          <div className="flex items-center" onClick={handleCopyCode}>
-            <TooltipProvider>
-              <Tooltip>
-                <TooltipTrigger asChild>
-                  <p className="text-xl cursor-pointer text-blue-500">
-                    {roomData?.room.code}
-                  </p>
-                </TooltipTrigger>
-                <TooltipContent>
-                  <p>Click to copy</p>
-                </TooltipContent>
-              </Tooltip>
-            </TooltipProvider>
+        <div className={"flex justify-between"}>
+          <div className="mb-4">
+            <Label className="block">Room Name</Label>
+            <p className="text-xl">{roomData?.room.name}</p>
+          </div>
+          <div className="mb-4 text-right">
+            <Label className="block">Room Code</Label>
+            <div className="" onClick={handleCopyCode}>
+              <TooltipProvider>
+                <Tooltip>
+                  <TooltipTrigger asChild>
+                    <p className="text-xl cursor-pointer">
+                      {roomData?.room.code}
+                    </p>
+                  </TooltipTrigger>
+                  <TooltipContent>
+                    <p>Click to copy</p>
+                  </TooltipContent>
+                </Tooltip>
+              </TooltipProvider>
+            </div>
           </div>
         </div>
-        <div className="mb-4">
-          <Label className="block text-lg font-semibold">Owner</Label>
-          <p className="text-xl">
-            {roomData?.room.owner.name.replace(/"/g, "")}
-          </p>
+        <div className={"flex justify-between"}>
+          <div className="mb-4">
+            <Label className="block">Owner</Label>
+            <p className="text-xl">
+              {roomData?.room.owner.name.replace(/"/g, "")}
+            </p>
+          </div>
+          <div className="mb-4 text-right">
+            <Label className="block">Game Status</Label>
+            <p className="text-xl">
+              {roomData?.room.gameStarded ? "Started" : "Not Started"}
+            </p>
+          </div>
         </div>
         <ScrollArea className="h-72 w-full rounded-md border mb-4">
           <div className="p-4">
@@ -565,7 +637,7 @@ const ManageRoom: React.FC = () => {
             </div>
           </ScrollArea>
         </div>
-        <div className="mt-4">
+        <div className="mt-4 flex justify-between">
           <AlertDialog>
             <AlertDialogTrigger asChild>
               <Button variant="destructive">Delete Room</Button>
@@ -592,6 +664,61 @@ const ManageRoom: React.FC = () => {
               </AlertDialogFooter>
             </AlertDialogContent>
           </AlertDialog>
+          {roomData?.room.gameStarded ? (
+            <AlertDialog>
+              <AlertDialogTrigger asChild>
+                <Button variant="destructive">End the Game</Button>
+              </AlertDialogTrigger>
+              <AlertDialogContent>
+                <AlertDialogHeader>
+                  <AlertDialogTitle>End the Game</AlertDialogTitle>
+                  <AlertDialogDescription>
+                    Are you sure you want to end the game?
+                  </AlertDialogDescription>
+                </AlertDialogHeader>
+                <AlertDialogFooter>
+                  <AlertDialogCancel>Cancel</AlertDialogCancel>
+                  <Button onClick={handleEndGame} disabled={endingGame}>
+                    {endingGame ? (
+                      <Spinner content="Ending..." />
+                    ) : endedGame ? (
+                      <Check className="h-4 w-4" />
+                    ) : (
+                      "End the Game"
+                    )}
+                  </Button>
+                </AlertDialogFooter>
+              </AlertDialogContent>
+            </AlertDialog>
+          ) : (
+            <>
+              <AlertDialog>
+                <AlertDialogTrigger asChild>
+                  <Button variant="">Start the Game</Button>
+                </AlertDialogTrigger>
+                <AlertDialogContent>
+                  <AlertDialogHeader>
+                    <AlertDialogTitle>Start the Game</AlertDialogTitle>
+                    <AlertDialogDescription>
+                      Are you sure you want to start the game?
+                    </AlertDialogDescription>
+                  </AlertDialogHeader>
+                  <AlertDialogFooter>
+                    <AlertDialogCancel>Cancel</AlertDialogCancel>
+                    <Button onClick={handleStartGame} disabled={startingGame}>
+                      {startingGame ? (
+                        <Spinner content="Starting..." />
+                      ) : startedGame ? (
+                        <Check className="h-4 w-4" />
+                      ) : (
+                        "Start the Game"
+                      )}
+                    </Button>
+                  </AlertDialogFooter>
+                </AlertDialogContent>
+              </AlertDialog>
+            </>
+          )}
         </div>
       </div>
     </div>

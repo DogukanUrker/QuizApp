@@ -117,6 +117,7 @@ def createRoom():
                 "owner": {"name": data["userName"], "email": data["email"]},
                 "members": [{"name": data["userName"], "email": data["email"]}],
                 "code": roomCode,
+                "gameStarted": False
             }
         )
         return jsonify({"message": "Room created successfully", "room": {"data": data, "code": roomCode}}), 201
@@ -234,7 +235,8 @@ def getRoom():
             {"message": "Room found",
              "room": {"name": room["name"], "owner": room["owner"], "members": room["members"],
                       "questions": room["questions"],
-                      "code": room["code"]}}), 200
+                      "code": room["code"],
+                      "gameStarded": room["gameStarted"]}}), 200
     except Exception as e:
         app.logger.error(e)
         return jsonify({"error": str(e)}), 500
@@ -419,6 +421,85 @@ def exitRoom():
             {"message": "User exited successfully",
              "room": {"name": room["name"], "members": room["members"], "questions": room["questions"],
                       "code": room["code"]}}), 200
+    except Exception as e:
+        app.logger.error(e)
+        return jsonify({"error": str(e)}), 500
+
+
+@app.route("/startGame", methods=["POST"])
+@jwt_required()
+def startGame():
+    try:
+        app.logger.info("Starting game")
+        client = MongoClient(uri, server_api=ServerApi("1"))
+
+        database = client["app"]
+        roomsCollection = database["rooms"]
+
+        data = request.json
+        room = roomsCollection.find_one({"code": data["roomCode"]})
+
+        if not room:
+            return jsonify({"error": "Room not found"}), 404
+
+        room["gameStarted"] = True
+        roomsCollection.update_one({"code": data["roomCode"]},
+                                   {"$set": {"gameStarted": True}})
+        return jsonify(
+            {"message": "Game started successfully",
+             "room": {"name": room["name"], "members": room["members"], "questions": room["questions"],
+                      "code": room["code"]}}), 200
+    except Exception as e:
+        app.logger.error(e)
+        return jsonify({"error": str(e)}), 500
+
+
+@app.route("/endGame", methods=["POST"])
+@jwt_required()
+def endGame():
+    try:
+        app.logger.info("Ending game")
+        client = MongoClient(uri, server_api=ServerApi("1"))
+
+        database = client["app"]
+        roomsCollection = database["rooms"]
+
+        data = request.json
+        room = roomsCollection.find_one({"code": data["roomCode"]})
+        print("game endded")
+        if not room:
+            return jsonify({"error": "Room not found"}), 404
+
+        room["gameStarted"] = False
+        roomsCollection.update_one({"code": data["roomCode"]},
+                                   {"$set": {"gameStarted": False}})
+        return jsonify(
+            {"message": "Game ended successfully",
+             "room": {"name": room["name"], "members": room["members"], "questions": room["questions"],
+                      "code": room["code"]}}), 200
+    except Exception as e:
+        app.logger.error(e)
+        return jsonify({"error": str(e)}), 500
+
+
+@app.route("/getGameStatus", methods=["POST"])
+def getGameStatus():
+    try:
+        app.logger.info("Getting game status")
+        client = MongoClient(uri, server_api=ServerApi("1"))
+
+        database = client["app"]
+        roomsCollection = database["rooms"]
+
+        data = request.json
+        room = roomsCollection.find_one({"code": data["roomCode"]})
+
+        if not room:
+            return jsonify({"error": "Room not found"}), 404
+
+        return jsonify(
+            {"message": "Game status found",
+             "gameStarted": room["gameStarted"]}), 200
     except Exception as e:
         app.logger.error(e)
         return jsonify({"error": str(e)}), 500
