@@ -8,28 +8,30 @@ import { ModeToggle } from "@/components/mode-toggle.tsx";
 import Profile from "@/components/profile.tsx";
 import { Toaster } from "sonner";
 import ManageRoom from "@/pages/manageRoom.tsx";
-import { House } from "lucide-react";
 import { Button } from "@/components/ui/button.tsx";
+import { House } from "lucide-react";
 
 const App = () => {
   const token = localStorage.getItem("token");
 
   return (
     <ThemeProvider storageKey="theme">
-      <div className={"absolute top-2 left-2"}>
-        <Button
-          variant="ghost"
-          size="icon"
-          onClick={() => (window.location.href = "/")}
-        >
-          <House className="h-[1.2rem] w-[1.2rem]" />
-          <span className="sr-only">Home</span>
-        </Button>
-      </div>
       <div className="absolute top-2 right-2 flex ">
         {token && token !== "undefined" && <Profile />}
         <ModeToggle />
       </div>
+      {!token || token === "undefined" ? (
+        <div className={"absolute top-2 left-2"}>
+          <Button
+            variant="ghost"
+            size="icon"
+            onClick={() => (window.location.href = "/")}
+          >
+            <House className="h-[1.2rem] w-[1.2rem]" />
+            <span className="sr-only">Home</span>
+          </Button>
+        </div>
+      ) : null}
       <Router>
         <Routes>
           {!token || token === "undefined" ? (
