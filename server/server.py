@@ -199,7 +199,8 @@ def addQuestion():
         room["questions"].append({"id": questionID, "question": data["question"],
                                   "answers": {"a": data["answers"]["a"], "b": data["answers"]["b"],
                                               "c": data["answers"]["c"], "d": data["answers"]["d"]
-                                              }, "correct": data["correct"]})
+                                              }, "correct": data["correct"], "point": data["point"],
+                                  "time": data["time"]})
         roomsCollection.update_one({"code": data["roomCode"]}, {"$set": {"questions": room["questions"]}})
         return jsonify(
             {"message": "Question added successfully",

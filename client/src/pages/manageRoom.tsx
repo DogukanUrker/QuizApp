@@ -71,6 +71,8 @@ const ManageRoom: React.FC = () => {
   const [answerC, setAnswerC] = useState("");
   const [answerD, setAnswerD] = useState("");
   const [correctAnswer, setCorrectAnswer] = useState("");
+  const [point, setPoint] = useState(10);
+  const [time, setTime] = useState(15);
   const [deletingQuestionId, setDeletingQuestionId] = useState<string | null>(
     null,
   );
@@ -212,6 +214,8 @@ const ManageRoom: React.FC = () => {
             d: answerD,
           },
           correct: correctAnswer,
+          point: point,
+          time: time,
         },
         {
           headers: {
@@ -412,6 +416,26 @@ const ManageRoom: React.FC = () => {
                 </AlertDialogDescription>
               </AlertDialogHeader>
               <div className="p-4">
+                <div className={"flex justify-between"}>
+                  <div>
+                    <Label className="block mb-2">Point</Label>
+                    <Input
+                      type={"number"}
+                      value={point}
+                      className={"w-full mb-4 p-2 border rounded"}
+                      onChange={(e) => setPoint(parseInt(e.target.value))}
+                    />
+                  </div>
+                  <div>
+                    <Label className="block mb-2">Time in Seconds</Label>
+                    <Input
+                      type={"number"}
+                      value={time}
+                      className="w-full mb-4 p-2 border rounded"
+                      onChange={(e) => setTime(parseInt(e.target.value))}
+                    />
+                  </div>
+                </div>
                 <Label className="block mb-2">Question</Label>
                 <Input
                   type="text"
@@ -495,6 +519,7 @@ const ManageRoom: React.FC = () => {
                   <p className="font-bold">
                     {index + 1} - {question.question}
                   </p>
+                  point: {question.point} time: {question.time}
                   <ul className="list-disc pl-5">
                     <li>A: {question.answers.a}</li>
                     <li>B: {question.answers.b}</li>
