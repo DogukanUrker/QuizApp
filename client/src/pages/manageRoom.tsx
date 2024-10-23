@@ -343,7 +343,7 @@ const ManageRoom: React.FC = () => {
             <TooltipProvider>
               <Tooltip>
                 <TooltipTrigger asChild>
-                  <p className="text-xl cursor-pointer">
+                  <p className="text-xl cursor-pointer text-blue-500">
                     {roomData?.room.code}
                   </p>
                 </TooltipTrigger>
