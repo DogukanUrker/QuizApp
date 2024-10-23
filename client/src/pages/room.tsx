@@ -180,7 +180,7 @@ const Room: React.FC = () => {
               <TooltipProvider>
                 <Tooltip>
                   <TooltipTrigger asChild>
-                    <p className="text-xl cursor-pointer text-blue-500">
+                    <p className="text-xl cursor-pointer">
                       {roomData?.room.code}
                     </p>
                   </TooltipTrigger>
