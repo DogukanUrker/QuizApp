@@ -23,6 +23,7 @@ import {
 import axios from "axios";
 import React, { useEffect, useState } from "react";
 import Spinner from "@/components/loading-spinner.tsx";
+import { apiURL } from "@/constans.ts";
 
 const Auth = () => {
   const [formData, setFormData] = useState({
@@ -49,7 +50,7 @@ const Auth = () => {
 
     try {
       const response = await axios.post(
-        "http://192.168.6.31:8080/joinGuest",
+        apiURL + "joinGuest",
         {
           roomCode: (document.getElementById("room-code") as HTMLInputElement)
             ?.value,
@@ -92,7 +93,7 @@ const Auth = () => {
   const handleSignup = async () => {
     try {
       setLoading(true);
-      const response = await axios.post("http://192.168.6.31:8080/addUser", {
+      const response = await axios.post(apiURL + "addUser", {
         name: formData.name,
         email: formData.signupEmail,
         password: formData.signupPassword,
@@ -115,7 +116,7 @@ const Auth = () => {
   const handleLogin = async () => {
     try {
       setLoading(true);
-      const response = await axios.post("http://192.168.6.31:8080/login", {
+      const response = await axios.post(apiURL + "login", {
         email: formData.loginEmail,
         password: formData.loginPassword,
       });

@@ -34,6 +34,7 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { Check, Trash, UserX } from "lucide-react";
+import { apiURL } from "@/constans.ts";
 
 interface RoomData {
   room: {
@@ -89,7 +90,7 @@ const ManageRoom: React.FC = () => {
       const email = localStorage.getItem("userEmail");
       try {
         const response = await axios.post(
-          "http://192.168.6.31:8080/room",
+          apiURL + "room",
           {
             roomCode: roomCode,
             email: email,
@@ -114,7 +115,7 @@ const ManageRoom: React.FC = () => {
       const token = localStorage.getItem("token");
       try {
         const response = await axios.post(
-          "http://192.168.6.31:8080/getQuestions",
+          apiURL + "getQuestions",
           { roomCode },
           {
             headers: {
@@ -139,7 +140,7 @@ const ManageRoom: React.FC = () => {
       const token = localStorage.getItem("token");
       try {
         const response = await axios.post(
-          "http://192.168.6.31:8080/loadUsers",
+          apiURL + "loadUsers",
           { roomCode },
           {
             headers: {
@@ -200,7 +201,7 @@ const ManageRoom: React.FC = () => {
     const token = localStorage.getItem("token");
     try {
       await axios.post(
-        "http://192.168.6.31:8080/addQuestion",
+        apiURL + "addQuestion",
         {
           roomCode: roomCode,
           question: question,
@@ -236,7 +237,7 @@ const ManageRoom: React.FC = () => {
     const token = localStorage.getItem("token");
     try {
       await axios.post(
-        "http://192.168.6.31:8080/deleteQuestion",
+        apiURL + "deleteQuestion",
         {
           questionID: questionId,
           roomCode: roomCode,
@@ -265,7 +266,7 @@ const ManageRoom: React.FC = () => {
     const token = localStorage.getItem("token");
     try {
       await axios.post(
-        "http://192.168.6.31:8080/banUser",
+        apiURL + "banUser",
         {
           email: email,
           roomCode: roomCode,
@@ -294,7 +295,7 @@ const ManageRoom: React.FC = () => {
     const token = localStorage.getItem("token");
     try {
       await axios.post(
-        "http://192.168.6.31:8080/deleteRoom",
+        apiURL + "deleteRoom",
         {
           roomCode: roomCode,
         },

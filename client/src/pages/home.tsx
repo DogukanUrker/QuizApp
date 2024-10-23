@@ -12,6 +12,7 @@ import { useState } from "react";
 import { Input } from "@/components/ui/input";
 import axios from "axios";
 import Spinner from "@/components/loading-spinner.tsx";
+import { apiURL } from "@/constans.ts";
 
 const Home = () => {
   const [loading, setLoading] = useState(false);
@@ -33,7 +34,7 @@ const Home = () => {
     const email = localStorage.getItem("userEmail");
     try {
       const response = await axios.post(
-        "http://192.168.6.31:8080/joinRoom",
+        apiURL + "joinRoom",
         {
           roomCode: (document.getElementById("room-code") as HTMLInputElement)
             ?.value,
@@ -69,7 +70,7 @@ const Home = () => {
     const email = localStorage.getItem("userEmail");
     try {
       const response = await axios.post(
-        "http://192.168.6.31:8080/createRoom",
+        apiURL + "createRoom",
         {
           name: (document.getElementById("room-name") as HTMLInputElement)
             ?.value,

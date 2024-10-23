@@ -9,6 +9,7 @@ import {
 import { Button } from "@/components/ui/button.tsx";
 import { House, LogOut, UserRound } from "lucide-react";
 import axios from "axios";
+import { apiURL } from "@/constans.ts";
 
 export function Profile() {
   const name: string | null = localStorage.getItem("userName");
@@ -18,7 +19,7 @@ export function Profile() {
     if (token) {
       try {
         await axios.post(
-          "http://192.168.6.31:8080/logout",
+          apiURL + "logout",
           {},
           {
             headers: {

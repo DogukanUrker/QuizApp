@@ -24,6 +24,7 @@ import {
   AlertDialogTrigger,
 } from "@/components/ui/alert-dialog";
 import { Check } from "lucide-react";
+import { apiURL } from "@/constans.ts";
 
 interface RoomData {
   room: {
@@ -50,7 +51,7 @@ const Room: React.FC = () => {
       const email = localStorage.getItem("userEmail");
       try {
         const response = await axios.post(
-          "http://192.168.6.31:8080/room",
+          apiURL + "room",
           {
             roomCode: roomCode,
             email: email,
@@ -79,7 +80,7 @@ const Room: React.FC = () => {
     const fetchUsers = async () => {
       try {
         const response = await axios.post(
-          "http://192.168.6.31:8080/loadUsers",
+          apiURL + "loadUsers",
           { roomCode },
           {
             headers: {
@@ -129,7 +130,7 @@ const Room: React.FC = () => {
     setExitingRoom(true);
     try {
       await axios.post(
-        "http://192.168.6.31:8080/exitRoom",
+        apiURL + "exitRoom",
         {
           roomCode: roomCode,
           email: email,
