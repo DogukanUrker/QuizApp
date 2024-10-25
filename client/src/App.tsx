@@ -1,6 +1,9 @@
 import Auth from "./pages/auth";
 import Home from "./pages/home";
 import Room from "@/pages/room.tsx";
+import Game from "@/pages/game.tsx";
+import Leaderboard from "@/pages/leaderboard.tsx";
+import LeaderboardManage from "@/pages/leaderboardManage.tsx";
 import NotFound from "@/pages/404.tsx";
 import { BrowserRouter as Router, Route, Routes } from "react-router-dom";
 import { ThemeProvider } from "@/components/theme-provider.tsx";
@@ -49,6 +52,12 @@ const App = () => {
           )}
           <Route path="/room/:roomCode" element={<Room />} />
           <Route path="*" element={<NotFound />} />
+          <Route path="/game/:roomCode/:questionNumber" element={<Game />} />
+          <Route path="/leaderboard/:roomCode" element={<Leaderboard />} />
+          <Route
+            path="/leaderboard/:roomCode/manage"
+            element={<LeaderboardManage />}
+          />
         </Routes>
         <Toaster />
       </Router>

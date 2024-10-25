@@ -70,6 +70,7 @@ const Auth = () => {
         localStorage.setItem("room", JSON.stringify(response.data));
         localStorage.setItem("userName", name || "Guest");
         localStorage.setItem("userEmail", "guest@app.com");
+        localStorage.setItem("userID", response.data.room.guest.id);
         window.location.href = "/room/" + response.data.room.code;
       }
     } catch (error) {
@@ -122,18 +123,11 @@ const Auth = () => {
       });
 
       if (response.data.error) {
-        console.log(response.data.message);
       } else {
-        console.log(response.data);
         localStorage.setItem("token", response.data.accessToken);
-        localStorage.setItem(
-          "userName",
-          JSON.stringify(response.data.user.name),
-        );
-        localStorage.setItem(
-          "userEmail",
-          JSON.stringify(response.data.user.email),
-        );
+        localStorage.setItem("userName", response.data.user.name);
+        localStorage.setItem("userEmail", response.data.user.email);
+        localStorage.setItem("userID", response.data.user.id);
         window.location.href = "/";
       }
     } catch (error) {

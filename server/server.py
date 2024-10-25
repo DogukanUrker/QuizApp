@@ -143,13 +143,23 @@ def joinRoom():
             return jsonify({"error": "User is banned from this room"}), 403
 
         if not any(member["email"] == data["email"] for member in room["members"]):
-            room["members"].append({"name": data["name"], "email": data["email"]})
+            room["members"].append(
+                {"id": data["userID"], "name": data["name"], "email": data["email"], "points": 0, "trueAnswers": 0,
+                 "falseAnswers": 0})
             roomsCollection.update_one({"code": data["roomCode"]}, {"$set": {"members": room["members"]}})
+
+        # Extract only the names of the members
+        member_names = [member["name"] for member in room["members"]]
 
         return jsonify(
             {"message": "Room joined successfully",
-             "room": {"name": room["name"], "members": room["members"], "questions": room["questions"],
-                      "code": room["code"]}}), 200
+             "room": {
+                 "name": room["name"],
+                 "members": member_names,
+                 "questions": room["questions"],
+                 "code": room["code"]
+             }
+             }), 200
     except Exception as e:
         return jsonify({"error": str(e)}), 500
 
@@ -161,22 +171,42 @@ def joinGuest():
         client = MongoClient(uri, server_api=ServerApi("1"))
         database = client["app"]
         roomsCollection = database["rooms"]
+        guestsCollection = database["guests"]
 
         data = request.json
 
+        result = guestsCollection.insert_one(
+            {
+                "name": data["name"],
+                "email": "guest@app.com",
+                "time": current(),
+            })
         room = roomsCollection.find_one({"code": data["roomCode"]})
-
-        room["members"].append({"name": data["name"], "email": "guest@app.com"})
-        roomsCollection.update_one({"code": data["roomCode"]}, {"$set": {"members": room["members"]}})
-
         if not room:
             return jsonify({"error": "Room not found"}), 404
 
+        # Convert ObjectId to string before appending to room["members"]
+        room["members"].append(
+            {"id": str(result.inserted_id), "name": data["name"], "email": "guest@app.com", "points": 0,
+             "trueAnswers": 0, "falseAnswers": 0}
+        )
+        roomsCollection.update_one({"code": data["roomCode"]}, {"$set": {"members": room["members"]}})
+
+        # Return only the names of the members
+        member_names = [member["name"] for member in room["members"]]
+
         return jsonify(
             {"message": "Room found",
-             "room": {"name": room["name"], "members": room["members"], "questions": room["questions"],
-                      "code": room["code"], "guest": {"name": data["name"]}}}), 200
+             "room": {
+                 "name": room["name"],
+                 "members": member_names,
+                 "questions": room["questions"],
+                 "code": room["code"],
+                 "guest": {"id": str(result.inserted_id), "name": data["name"]}
+             }
+             }), 200
     except Exception as e:
+        print(e)
         return jsonify({"error": str(e)}), 500
 
 
@@ -231,12 +261,20 @@ def getRoom():
                 member["email"] == data["email"] for member in room["members"]):
             return jsonify({"error": "Access denied"}), 403
 
+        # Extract only the names of the members
+        member_names = [member["name"] for member in room["members"]]
+
         return jsonify(
             {"message": "Room found",
-             "room": {"name": room["name"], "owner": room["owner"], "members": room["members"],
-                      "questions": room["questions"],
-                      "code": room["code"],
-                      "gameStarded": room["gameStarted"]}}), 200
+             "room": {
+                 "name": room["name"],
+                 "owner": room["owner"],
+                 "members": member_names,
+                 "questions": room["questions"],
+                 "code": room["code"],
+                 "gameStarted": room["gameStarted"]
+             }
+             }), 200
     except Exception as e:
         app.logger.error(e)
         return jsonify({"error": str(e)}), 500
@@ -310,7 +348,7 @@ def getQuestion():
         if not room:
             return jsonify({"error": "Room not found"}), 404
 
-        question = room["questions"][data["questionID"]]
+        question = room["questions"][int(data["questionNumber"]) - 1]  # Adjust for 1-based index
         return jsonify(
             {"message": "Question found",
              "question": question}), 200
@@ -391,9 +429,12 @@ def loadUsers():
         if not room:
             return jsonify({"error": "Room not found"}), 404
 
+        # Extract only the names of the users
+        user_names = [user["name"] for user in room["members"]]
+
         return jsonify(
             {"message": "Users found",
-             "users": room["members"]}), 200
+             "users": user_names}), 200
     except Exception as e:
         app.logger.error(e)
         return jsonify({"error": str(e)}), 500
@@ -466,7 +507,6 @@ def endGame():
 
         data = request.json
         room = roomsCollection.find_one({"code": data["roomCode"]})
-        print("game endded")
         if not room:
             return jsonify({"error": "Room not found"}), 404
 
@@ -505,5 +545,75 @@ def getGameStatus():
         return jsonify({"error": str(e)}), 500
 
 
+@app.route("/submitAnswer", methods=["POST"])
+def submitAnswer():
+    try:
+        app.logger.info("Submitting answer")
+        client = MongoClient(uri, server_api=ServerApi("1"))
+
+        database = client["app"]
+        roomsCollection = database["rooms"]
+
+        data = request.json
+        room = roomsCollection.find_one({"code": data["roomCode"]})
+        if not room:
+            return jsonify({"error": "Room not found"}), 404
+
+        user = next((member for member in room["members"] if member.get("id") == data["userID"]), None)
+        if not user:
+            return jsonify({"error": "User not found"}), 404
+
+        if data["answer"] == data["correct"]:
+
+            basePoint = data["point"]
+            finalPoint = int((basePoint * (basePoint / (data["timeTaken"] / 96))) / 128)
+
+            user["points"] += finalPoint
+            user["trueAnswers"] = user.get("trueAnswers", 0) + 1
+        else:
+            user["falseAnswers"] = user.get("falseAnswers", 0) + 1
+
+        roomsCollection.update_one({"code": data["roomCode"]}, {"$set": {"members": room["members"]}})
+
+        questionNumber = int(data["questionNumber"])
+        if questionNumber < len(room["questions"]):
+            return jsonify({"message": "Correct answer" if data["answer"] == data["correct"] else "Incorrect answer",
+                            "status": "next"}), 200
+        else:
+            return jsonify({"message": "Correct answer" if data["answer"] == data["correct"] else "Incorrect answer",
+                            "status": "end"}), 200
+
+    except Exception as e:
+        app.logger.error(e)
+        return jsonify({"error": str(e)}), 500
+
+
+@app.route("/leaderboard", methods=["POST"])
+def leaderboard():
+    try:
+        app.logger.info("Getting leaderboard")
+        client = MongoClient(uri, server_api=ServerApi("1"))
+
+        database = client["app"]
+        roomsCollection = database["rooms"]
+
+        data = request.json
+        room = roomsCollection.find_one({"code": data["roomCode"]})
+
+        if not room:
+            return jsonify({"error": "Room not found"}), 404
+
+        leaderboard = sorted([member for member in room["members"] if member["name"] != room["owner"]["name"]],
+                             key=lambda x: x.get("points", 0), reverse=True)
+        return jsonify(
+            {"message": "Leaderboard found",
+             "roomName": room["name"],
+             "leaderboard": leaderboard,
+             "owner": room["owner"]["email"]}), 200
+    except Exception as e:
+        app.logger.error(e)
+        return jsonify({"error": str(e)}), 500
+
+
 if __name__ == "__main__":
-    app.run(debug=True, host="192.168.4.111", port=8080)
+    app.run(debug=True, host=Config.HOST, port=8080)

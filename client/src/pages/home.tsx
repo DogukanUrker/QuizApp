@@ -32,6 +32,7 @@ const Home = () => {
     const token = localStorage.getItem("token");
     const name = localStorage.getItem("userName");
     const email = localStorage.getItem("userEmail");
+    const userID = localStorage.getItem("userID");
     try {
       const response = await axios.post(
         apiURL + "joinRoom",
@@ -40,6 +41,7 @@ const Home = () => {
             ?.value,
           name: name,
           email: email,
+          userID: userID,
         },
         {
           headers: {

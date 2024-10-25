@@ -63,6 +63,7 @@ const Room: React.FC = () => {
           },
         );
         setRoomData(response.data);
+        console.log(response.data);
       } catch (err: unknown) {
         if (err instanceof Error) {
           setError(err.message);
@@ -105,7 +106,34 @@ const Room: React.FC = () => {
     const intervalId = setInterval(fetchUsers, 3000);
     return () => clearInterval(intervalId);
   }, [roomCode]);
+  useEffect(() => {
+    const fetchGameStatus = async () => {
+      try {
+        const response = await axios.post(
+          apiURL + "getGameStatus",
+          { roomCode },
+          {
+            headers: {
+              "Content-Type": "application/json",
+            },
+          },
+        );
+        setRoomData((prevData) => {
+          if (response.data.gameStarted === true) {
+            window.location.pathname = `/game/${roomCode}/1`;
+          }
+          return prevData;
+        });
+      } catch (err: unknown) {
+        if (err instanceof Error) {
+          toast.error("Failed to fetch game status.");
+        }
+      }
+    };
 
+    const intervalId = setInterval(fetchGameStatus, 3000);
+    return () => clearInterval(intervalId);
+  }, [roomCode]);
   if (loading)
     return (
       <div className="flex items-center justify-center min-h-screen">
@@ -194,7 +222,7 @@ const Room: React.FC = () => {
           <div className="mb-4">
             <Label className="block">Owner</Label>
             <p className="text-xl font-semibold">
-              {roomData?.room.owner.name.replace(/"/g, "")}
+              {roomData?.room.owner.name.replace(/'/g, "")}
             </p>
           </div>
           <ScrollArea className="h-72 w-64 rounded-md border p-4">
@@ -203,7 +231,7 @@ const Room: React.FC = () => {
             </h4>
             {roomData?.room.members.map((member) => (
               <div key={member.email} className="mb-2">
-                <div className="text-sm">{member.name.replace(/"/g, "")}</div>
+                <div className="text-sm">{member}</div>
                 <Separator className="my-2" />
               </div>
             ))}

@@ -375,7 +375,7 @@ const ManageRoom: React.FC = () => {
       setEndedGame(true);
       toast.success("Game ended successfully.");
       setTimeout(() => {
-        window.location.href = "/room/" + roomCode + "/leaderboard";
+        window.location.href = "/leaderboard/" + roomCode + "/manage";
       }, 1500);
     } catch (err) {
       toast.error("Failed to end game.");
@@ -440,7 +440,7 @@ const ManageRoom: React.FC = () => {
             {roomData?.room.members.map((member) => (
               <div key={member.email}>
                 <div className="flex justify-between items-center">
-                  <div className="text-sm">{member.name.replace(/"/g, "")}</div>
+                  <div className="text-sm">{member}</div>
                   <AlertDialog>
                     <AlertDialogTrigger asChild>
                       <Button variant="ghost" className="py-2 px-4">
