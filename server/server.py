@@ -17,7 +17,7 @@ cors = CORS(app, origins="*")
 app.config["SECRET_KEY"] = Config.SECRET_KEY
 app.config["JWT_ACCESS_TOKEN_EXPIRES"] = timedelta(weeks=5215)
 app.config["JWT_REFRESH_TOKEN_EXPIRES"] = timedelta(weeks=5215)
-app.config['JWT_SECRET_KEY'] = Config.SECRET_KEY
+app.config["JWT_SECRET_KEY"] = Config.SECRET_KEY
 jwt = JWTManager(app)
 
 blacklist = set()
@@ -77,9 +77,20 @@ def login():
             return jsonify({"error": "Invalid password"}), 401
 
         accessToken = create_access_token(identity=data["email"])
-        return jsonify({"message": "Login successful",
-                        "user": {"id": str(user["_id"]), "name": user["name"], "email": user["email"]},
-                        "accessToken": accessToken}), 200
+        return (
+            jsonify(
+                {
+                    "message": "Login successful",
+                    "user": {
+                        "id": str(user["_id"]),
+                        "name": user["name"],
+                        "email": user["email"],
+                    },
+                    "accessToken": accessToken,
+                }
+            ),
+            200,
+        )
     except Exception as e:
         return jsonify({"error": str(e)}), 500
 
@@ -117,10 +128,18 @@ def createRoom():
                 "owner": {"name": data["userName"], "email": data["email"]},
                 "members": [{"name": data["userName"], "email": data["email"]}],
                 "code": roomCode,
-                "gameStarted": False
+                "gameStarted": False,
             }
         )
-        return jsonify({"message": "Room created successfully", "room": {"data": data, "code": roomCode}}), 201
+        return (
+            jsonify(
+                {
+                    "message": "Room created successfully",
+                    "room": {"data": data, "code": roomCode},
+                }
+            ),
+            201,
+        )
 
     except Exception as e:
         return jsonify({"error": str(e)}), 500
@@ -144,22 +163,36 @@ def joinRoom():
 
         if not any(member["email"] == data["email"] for member in room["members"]):
             room["members"].append(
-                {"id": data["userID"], "name": data["name"], "email": data["email"], "points": 0, "trueAnswers": 0,
-                 "falseAnswers": 0})
-            roomsCollection.update_one({"code": data["roomCode"]}, {"$set": {"members": room["members"]}})
+                {
+                    "id": data["userID"],
+                    "name": data["name"],
+                    "email": data["email"],
+                    "points": 0,
+                    "trueAnswers": 0,
+                    "falseAnswers": 0,
+                }
+            )
+            roomsCollection.update_one(
+                {"code": data["roomCode"]}, {"$set": {"members": room["members"]}}
+            )
 
         # Extract only the names of the members
         member_names = [member["name"] for member in room["members"]]
 
-        return jsonify(
-            {"message": "Room joined successfully",
-             "room": {
-                 "name": room["name"],
-                 "members": member_names,
-                 "questions": room["questions"],
-                 "code": room["code"]
-             }
-             }), 200
+        return (
+            jsonify(
+                {
+                    "message": "Room joined successfully",
+                    "room": {
+                        "name": room["name"],
+                        "members": member_names,
+                        "questions": room["questions"],
+                        "code": room["code"],
+                    },
+                }
+            ),
+            200,
+        )
     except Exception as e:
         return jsonify({"error": str(e)}), 500
 
@@ -180,31 +213,45 @@ def joinGuest():
                 "name": data["name"],
                 "email": "guest@app.com",
                 "time": current(),
-            })
+            }
+        )
         room = roomsCollection.find_one({"code": data["roomCode"]})
         if not room:
             return jsonify({"error": "Room not found"}), 404
 
         # Convert ObjectId to string before appending to room["members"]
         room["members"].append(
-            {"id": str(result.inserted_id), "name": data["name"], "email": "guest@app.com", "points": 0,
-             "trueAnswers": 0, "falseAnswers": 0}
+            {
+                "id": str(result.inserted_id),
+                "name": data["name"],
+                "email": "guest@app.com",
+                "points": 0,
+                "trueAnswers": 0,
+                "falseAnswers": 0,
+            }
         )
-        roomsCollection.update_one({"code": data["roomCode"]}, {"$set": {"members": room["members"]}})
+        roomsCollection.update_one(
+            {"code": data["roomCode"]}, {"$set": {"members": room["members"]}}
+        )
 
         # Return only the names of the members
         member_names = [member["name"] for member in room["members"]]
 
-        return jsonify(
-            {"message": "Room found",
-             "room": {
-                 "name": room["name"],
-                 "members": member_names,
-                 "questions": room["questions"],
-                 "code": room["code"],
-                 "guest": {"id": str(result.inserted_id), "name": data["name"]}
-             }
-             }), 200
+        return (
+            jsonify(
+                {
+                    "message": "Room found",
+                    "room": {
+                        "name": room["name"],
+                        "members": member_names,
+                        "questions": room["questions"],
+                        "code": room["code"],
+                        "guest": {"id": str(result.inserted_id), "name": data["name"]},
+                    },
+                }
+            ),
+            200,
+        )
     except Exception as e:
         print(e)
         return jsonify({"error": str(e)}), 500
@@ -227,17 +274,84 @@ def addQuestion():
         if not room:
             return jsonify({"error": "Room not found"}), 404
 
-        room["questions"].append({"id": questionID, "question": data["question"],
-                                  "answers": {"a": data["answers"]["a"], "b": data["answers"]["b"],
-                                              "c": data["answers"]["c"], "d": data["answers"]["d"]
-                                              }, "correct": data["correct"], "point": data["point"],
-                                  "time": data["time"]})
-        roomsCollection.update_one({"code": data["roomCode"]}, {"$set": {"questions": room["questions"]}})
-        return jsonify(
-            {"message": "Question added successfully",
-             "room": {"name": room["name"], "members": room["members"], "questions": room["questions"],
-                      "code": room["code"]}}), 200
+        room["questions"].append(
+            {
+                "id": questionID,
+                "question": data["question"],
+                "answers": {
+                    "a": data["answers"]["a"],
+                    "b": data["answers"]["b"],
+                    "c": data["answers"]["c"],
+                    "d": data["answers"]["d"],
+                },
+                "correct": data["correct"],
+                "point": data["point"],
+                "time": data["time"],
+            }
+        )
+        roomsCollection.update_one(
+            {"code": data["roomCode"]}, {"$set": {"questions": room["questions"]}}
+        )
+        return (
+            jsonify(
+                {
+                    "message": "Question added successfully",
+                    "room": {
+                        "name": room["name"],
+                        "members": room["members"],
+                        "questions": room["questions"],
+                        "code": room["code"],
+                    },
+                }
+            ),
+            200,
+        )
     except Exception as e:
+        return jsonify({"error": str(e)}), 500
+
+
+@app.route("/Room", methods=["POST"])
+def getRoomData():
+    try:
+        app.logger.info("Getting room info")
+        client = MongoClient(uri, server_api=ServerApi("1"))
+
+        database = client["app"]
+        roomsCollection = database["rooms"]
+
+        data = request.json
+
+        room = roomsCollection.find_one({"code": data["roomCode"]})
+
+        if not room:
+            return jsonify({"error": "Room not found"}), 404
+
+        if data["email"] in room.get("bannedUsers", []) or not any(
+            member["email"] == data["email"] for member in room["members"]
+        ):
+            return jsonify({"error": "Access denied"}), 403
+
+        # Extract only the names of the members
+        member_names = [member["name"] for member in room["members"]]
+
+        return (
+            jsonify(
+                {
+                    "message": "Room found",
+                    "room": {
+                        "name": room["name"],
+                        "owner": room["owner"],
+                        "members": member_names,
+                        "questions": room["questions"],
+                        "code": room["code"],
+                        "gameStarted": room["gameStarted"],
+                    },
+                }
+            ),
+            200,
+        )
+    except Exception as e:
+        app.logger.error(e)
         return jsonify({"error": str(e)}), 500
 
 
@@ -258,23 +372,26 @@ def getRoom():
             return jsonify({"error": "Room not found"}), 404
 
         if data["email"] in room.get("bannedUsers", []) or not any(
-                member["email"] == data["email"] for member in room["members"]):
+            member["email"] == data["email"] for member in room["members"]
+        ):
             return jsonify({"error": "Access denied"}), 403
 
-        # Extract only the names of the members
-        member_names = [member["name"] for member in room["members"]]
-
-        return jsonify(
-            {"message": "Room found",
-             "room": {
-                 "name": room["name"],
-                 "owner": room["owner"],
-                 "members": member_names,
-                 "questions": room["questions"],
-                 "code": room["code"],
-                 "gameStarted": room["gameStarted"]
-             }
-             }), 200
+        return (
+            jsonify(
+                {
+                    "message": "Room found",
+                    "room": {
+                        "name": room["name"],
+                        "owner": room["owner"],
+                        "members": room["members"],
+                        "questions": room["questions"],
+                        "code": room["code"],
+                        "gameStarted": room["gameStarted"],
+                    },
+                }
+            ),
+            200,
+        )
     except Exception as e:
         app.logger.error(e)
         return jsonify({"error": str(e)}), 500
@@ -296,9 +413,10 @@ def getQuestions():
         if not room:
             return jsonify({"error": "Room not found"}), 404
 
-        return jsonify(
-            {"message": "Questions found",
-             "questions": room["questions"]}), 200
+        return (
+            jsonify({"message": "Questions found", "questions": room["questions"]}),
+            200,
+        )
     except Exception as e:
         app.logger.error(e)
         return jsonify({"error": str(e)}), 500
@@ -321,12 +439,26 @@ def deleteQuestion():
         if not room:
             return jsonify({"error": "Room not found"}), 404
 
-        room["questions"] = [q for q in room["questions"] if q.get("id") != data["questionID"]]
-        roomsCollection.update_one({"code": data["roomCode"]}, {"$set": {"questions": room["questions"]}})
-        return jsonify(
-            {"message": "Question deleted successfully",
-             "room": {"name": room["name"], "members": room["members"], "questions": room["questions"],
-                      "code": room["code"]}}), 200
+        room["questions"] = [
+            q for q in room["questions"] if q.get("id") != data["questionID"]
+        ]
+        roomsCollection.update_one(
+            {"code": data["roomCode"]}, {"$set": {"questions": room["questions"]}}
+        )
+        return (
+            jsonify(
+                {
+                    "message": "Question deleted successfully",
+                    "room": {
+                        "name": room["name"],
+                        "members": room["members"],
+                        "questions": room["questions"],
+                        "code": room["code"],
+                    },
+                }
+            ),
+            200,
+        )
     except Exception as e:
         app.logger.error(e)
         return jsonify({"error": str(e)}), 500
@@ -348,10 +480,10 @@ def getQuestion():
         if not room:
             return jsonify({"error": "Room not found"}), 404
 
-        question = room["questions"][int(data["questionNumber"]) - 1]  # Adjust for 1-based index
-        return jsonify(
-            {"message": "Question found",
-             "question": question}), 200
+        question = room["questions"][
+            int(data["questionNumber"]) - 1
+        ]  # Adjust for 1-based index
+        return jsonify({"message": "Question found", "question": question}), 200
     except Exception as e:
         app.logger.error(e)
         return jsonify({"error": str(e)}), 500
@@ -375,8 +507,7 @@ def deleteRoom():
             return jsonify({"error": "Room not found"}), 404
 
         roomsCollection.delete_one({"code": data["roomCode"]})
-        return jsonify(
-            {"message": "Room deleted successfully"}), 200
+        return jsonify({"message": "Room deleted successfully"}), 200
     except Exception as e:
         app.logger.error(e)
         return jsonify({"error": str(e)}), 500
@@ -399,16 +530,52 @@ def banUser():
         if not room:
             return jsonify({"error": "Room not found"}), 404
 
-        room["members"] = [m for m in room["members"] if m.get("email") != data["email"]]
+        room["members"] = [m for m in room["members"] if m.get("id") != data["userID"]]
         if "bannedUsers" not in room:
             room["bannedUsers"] = []
-        room["bannedUsers"].append(data["email"])
-        roomsCollection.update_one({"code": data["roomCode"]},
-                                   {"$set": {"members": room["members"], "bannedUsers": room["bannedUsers"]}})
-        return jsonify(
-            {"message": "User banned successfully",
-             "room": {"name": room["name"], "members": room["members"], "questions": room["questions"],
-                      "code": room["code"]}}), 200
+        room["bannedUsers"].append(data["userID"])
+        roomsCollection.update_one(
+            {"code": data["roomCode"]},
+            {"$set": {"members": room["members"], "bannedUsers": room["bannedUsers"]}},
+        )
+        return (
+            jsonify(
+                {
+                    "message": "User banned successfully",
+                    "room": {
+                        "name": room["name"],
+                        "members": room["members"],
+                        "questions": room["questions"],
+                        "code": room["code"],
+                    },
+                }
+            ),
+            200,
+        )
+    except Exception as e:
+        app.logger.error(e)
+        return jsonify({"error": str(e)}), 500
+
+
+@app.route("/loadUsersRoom", methods=["POST"])
+def loadUsersRoom():
+    try:
+        app.logger.info("Loading users")
+        client = MongoClient(uri, server_api=ServerApi("1"))
+
+        database = client["app"]
+        roomsCollection = database["rooms"]
+
+        data = request.json
+        room = roomsCollection.find_one({"code": data["roomCode"]})
+
+        if not room:
+            return jsonify({"error": "Room not found"}), 404
+
+        # Extract only the names of the users
+        user_names = [user["name"] for user in room["members"]]
+
+        return jsonify({"message": "Users found", "users": user_names}), 200
     except Exception as e:
         app.logger.error(e)
         return jsonify({"error": str(e)}), 500
@@ -429,12 +596,7 @@ def loadUsers():
         if not room:
             return jsonify({"error": "Room not found"}), 404
 
-        # Extract only the names of the users
-        user_names = [user["name"] for user in room["members"]]
-
-        return jsonify(
-            {"message": "Users found",
-             "users": user_names}), 200
+        return jsonify({"message": "Users found", "users": room["members"]}), 200
     except Exception as e:
         app.logger.error(e)
         return jsonify({"error": str(e)}), 500
@@ -455,13 +617,26 @@ def exitRoom():
         if not room:
             return jsonify({"error": "Room not found"}), 404
 
-        room["members"] = [m for m in room["members"] if m.get("email") != data["email"]]
-        roomsCollection.update_one({"code": data["roomCode"]},
-                                   {"$set": {"members": room["members"]}})
-        return jsonify(
-            {"message": "User exited successfully",
-             "room": {"name": room["name"], "members": room["members"], "questions": room["questions"],
-                      "code": room["code"]}}), 200
+        room["members"] = [
+            m for m in room["members"] if m.get("email") != data["email"]
+        ]
+        roomsCollection.update_one(
+            {"code": data["roomCode"]}, {"$set": {"members": room["members"]}}
+        )
+        return (
+            jsonify(
+                {
+                    "message": "User exited successfully",
+                    "room": {
+                        "name": room["name"],
+                        "members": room["members"],
+                        "questions": room["questions"],
+                        "code": room["code"],
+                    },
+                }
+            ),
+            200,
+        )
     except Exception as e:
         app.logger.error(e)
         return jsonify({"error": str(e)}), 500
@@ -484,12 +659,23 @@ def startGame():
             return jsonify({"error": "Room not found"}), 404
 
         room["gameStarted"] = True
-        roomsCollection.update_one({"code": data["roomCode"]},
-                                   {"$set": {"gameStarted": True}})
-        return jsonify(
-            {"message": "Game started successfully",
-             "room": {"name": room["name"], "members": room["members"], "questions": room["questions"],
-                      "code": room["code"]}}), 200
+        roomsCollection.update_one(
+            {"code": data["roomCode"]}, {"$set": {"gameStarted": True}}
+        )
+        return (
+            jsonify(
+                {
+                    "message": "Game started successfully",
+                    "room": {
+                        "name": room["name"],
+                        "members": room["members"],
+                        "questions": room["questions"],
+                        "code": room["code"],
+                    },
+                }
+            ),
+            200,
+        )
     except Exception as e:
         app.logger.error(e)
         return jsonify({"error": str(e)}), 500
@@ -511,12 +697,23 @@ def endGame():
             return jsonify({"error": "Room not found"}), 404
 
         room["gameStarted"] = False
-        roomsCollection.update_one({"code": data["roomCode"]},
-                                   {"$set": {"gameStarted": False}})
-        return jsonify(
-            {"message": "Game ended successfully",
-             "room": {"name": room["name"], "members": room["members"], "questions": room["questions"],
-                      "code": room["code"]}}), 200
+        roomsCollection.update_one(
+            {"code": data["roomCode"]}, {"$set": {"gameStarted": False}}
+        )
+        return (
+            jsonify(
+                {
+                    "message": "Game ended successfully",
+                    "room": {
+                        "name": room["name"],
+                        "members": room["members"],
+                        "questions": room["questions"],
+                        "code": room["code"],
+                    },
+                }
+            ),
+            200,
+        )
     except Exception as e:
         app.logger.error(e)
         return jsonify({"error": str(e)}), 500
@@ -537,9 +734,12 @@ def getGameStatus():
         if not room:
             return jsonify({"error": "Room not found"}), 404
 
-        return jsonify(
-            {"message": "Game status found",
-             "gameStarted": room["gameStarted"]}), 200
+        return (
+            jsonify(
+                {"message": "Game status found", "gameStarted": room["gameStarted"]}
+            ),
+            200,
+        )
     except Exception as e:
         app.logger.error(e)
         return jsonify({"error": str(e)}), 500
@@ -559,7 +759,14 @@ def submitAnswer():
         if not room:
             return jsonify({"error": "Room not found"}), 404
 
-        user = next((member for member in room["members"] if member.get("id") == data["userID"]), None)
+        user = next(
+            (
+                member
+                for member in room["members"]
+                if member.get("id") == data["userID"]
+            ),
+            None,
+        )
         if not user:
             return jsonify({"error": "User not found"}), 404
 
@@ -580,15 +787,82 @@ def submitAnswer():
             user["falseAnswers"] = user.get("falseAnswers", 0) + 1
 
         user["answeredQuestions"].append(questionNumber)
-        roomsCollection.update_one({"code": data["roomCode"]}, {"$set": {"members": room["members"]}})
+        roomsCollection.update_one(
+            {"code": data["roomCode"]}, {"$set": {"members": room["members"]}}
+        )
 
         if questionNumber < len(room["questions"]):
-            return jsonify({"message": "Correct answer" if data["answer"] == data["correct"] else "Incorrect answer",
-                            "status": "next"}), 200
+            return (
+                jsonify(
+                    {
+                        "message": (
+                            "Correct answer"
+                            if data["answer"] == data["correct"]
+                            else "Incorrect answer"
+                        ),
+                        "status": "next",
+                    }
+                ),
+                200,
+            )
         else:
-            return jsonify({"message": "Correct answer" if data["answer"] == data["correct"] else "Incorrect answer",
-                            "status": "end"}), 200
+            return (
+                jsonify(
+                    {
+                        "message": (
+                            "Correct answer"
+                            if data["answer"] == data["correct"]
+                            else "Incorrect answer"
+                        ),
+                        "status": "end",
+                    }
+                ),
+                200,
+            )
 
+    except Exception as e:
+        app.logger.error(e)
+        return jsonify({"error": str(e)}), 500
+
+
+@app.route("/timeoutAnswer", methods=["POST"])
+def timeoutAnswer():
+    try:
+        app.logger.info("Handling timeout answer")
+        client = MongoClient(uri, server_api=ServerApi("1"))
+
+        database = client["app"]
+        roomsCollection = database["rooms"]
+
+        data = request.json
+        room = roomsCollection.find_one({"code": data["roomCode"]})
+        if not room:
+            return jsonify({"error": "Room not found"}), 404
+
+        user = next(
+            (
+                member
+                for member in room["members"]
+                if member.get("id") == data["userID"]
+            ),
+            None,
+        )
+        if not user:
+            return jsonify({"error": "User not found"}), 404
+
+        if "answeredQuestions" not in user:
+            user["answeredQuestions"] = []
+
+        questionNumber = int(data["questionNumber"])
+        if questionNumber in user["answeredQuestions"]:
+            return jsonify({"error": "Question already answered"}), 403
+
+        user["answeredQuestions"].append(questionNumber)
+        roomsCollection.update_one(
+            {"code": data["roomCode"]}, {"$set": {"members": room["members"]}}
+        )
+
+        return jsonify({"message": "Question marked as answered due to timeout"}), 200
     except Exception as e:
         app.logger.error(e)
         return jsonify({"error": str(e)}), 500
@@ -609,13 +883,26 @@ def leaderboard():
         if not room:
             return jsonify({"error": "Room not found"}), 404
 
-        leaderboard = sorted([member for member in room["members"] if member["name"] != room["owner"]["name"]],
-                             key=lambda x: x.get("points", 0), reverse=True)
-        return jsonify(
-            {"message": "Leaderboard found",
-             "roomName": room["name"],
-             "leaderboard": leaderboard,
-             "owner": room["owner"]["email"]}), 200
+        leaderboard = sorted(
+            [
+                member
+                for member in room["members"]
+                if member["name"] != room["owner"]["name"]
+            ],
+            key=lambda x: x.get("points", 0),
+            reverse=True,
+        )
+        return (
+            jsonify(
+                {
+                    "message": "Leaderboard found",
+                    "roomName": room["name"],
+                    "leaderboard": leaderboard,
+                    "owner": room["owner"]["email"],
+                }
+            ),
+            200,
+        )
     except Exception as e:
         app.logger.error(e)
         return jsonify({"error": str(e)}), 500

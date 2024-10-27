@@ -27,14 +27,20 @@ import { Input } from "@/components/ui/input.tsx";
 import {
   Select,
   SelectContent,
-  SelectGroup,
   SelectItem,
-  SelectLabel,
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
-import { Check, Trash, UserX } from "lucide-react";
 import { apiURL } from "@/constans.ts";
+import { Check, Copy, ListOrdered, Trash, UserX } from "lucide-react";
+import {
+  Card,
+  CardContent,
+  CardDescription,
+  CardFooter,
+  CardHeader,
+  CardTitle,
+} from "@/components/ui/card";
 
 interface RoomData {
   room: {
@@ -43,7 +49,7 @@ interface RoomData {
     owner: {
       name: string;
     };
-    members: { name: string; email: string }[];
+    members: { name: string; email: string; id: string }[];
   };
 }
 
@@ -81,8 +87,8 @@ const ManageRoom: React.FC = () => {
   );
   const [addingQuestion, setAddingQuestion] = useState(false);
   const [addedQuestion, setAddedQuestion] = useState(false);
-  const [banningUserEmail, setBanningUserEmail] = useState<string | null>(null);
-  const [bannedUserEmail, setBannedUserEmail] = useState<string | null>(null);
+  const [banningUserEmail, setBanningUser] = useState<string | null>(null);
+  const [bannedUserEmail, setBannedUser] = useState<string | null>(null);
   const [deletingRoom, setDeletingRoom] = useState(false);
   const [deletedRoom, setDeletedRoom] = useState(false);
 
@@ -271,14 +277,14 @@ const ManageRoom: React.FC = () => {
     }
   };
 
-  const handleBanUser = async (email: string) => {
-    setBanningUserEmail(email);
+  const handleBanUser = async (id: string) => {
+    setBanningUser(id);
     const token = localStorage.getItem("token");
     try {
-      await axios.post(
+      const response = await axios.post(
         apiURL + "banUser",
         {
-          email: email,
+          userID: id,
           roomCode: roomCode,
         },
         {
@@ -289,17 +295,14 @@ const ManageRoom: React.FC = () => {
         },
       );
       toast.success("User banned successfully.");
-      setBannedUserEmail(email);
-      setTimeout(() => {
-        window.location.reload();
-      }, 1500);
+      setBannedUser(id);
     } catch (err) {
+      console.error("Failed to ban user:", err); // Log the error
       toast.error("Failed to ban user.");
     } finally {
-      setBanningUserEmail(null);
+      setBanningUser(null);
     }
   };
-
   const handleDeleteRoom = async () => {
     setDeletingRoom(true);
     const token = localStorage.getItem("token");
@@ -391,337 +394,381 @@ const ManageRoom: React.FC = () => {
       </div>
     );
   }
+
+  document.title = "Manage - " + roomData.room.name;
+
   return (
-    <div className="flex items-center justify-center min-h-screen p-4">
-      <div className="p-6 rounded-lg shadow-lg w-full max-w-3xl">
-        <div className={"flex justify-between"}>
-          <div className="mb-4">
-            <Label className="block">Room Name</Label>
-            <p className="text-xl">{roomData?.room.name}</p>
-          </div>
-          <div className="mb-4 text-right">
-            <Label className="block">Room Code</Label>
-            <div className="" onClick={handleCopyCode}>
+    <div className="min-h-screen p-4">
+      <div className="mx-auto max-w-6xl">
+        <Card className="mb-6">
+          <CardHeader>
+            <div className="flex items-center justify-between">
+              <div>
+                <CardTitle className="text-2xl font-bold">
+                  {roomData?.room.name}
+                </CardTitle>
+                <CardDescription>
+                  Managed by {roomData?.room.owner.name.replace(/"/g, "")}
+                </CardDescription>
+              </div>
               <TooltipProvider>
                 <Tooltip>
                   <TooltipTrigger asChild>
-                    <p className="text-xl cursor-pointer">
+                    <Button
+                      variant="outline"
+                      className="flex items-center gap-2"
+                      onClick={handleCopyCode}
+                    >
+                      <Copy className="h-4 w-4" />
                       {roomData?.room.code}
-                    </p>
+                    </Button>
                   </TooltipTrigger>
-                  <TooltipContent>
-                    <p>Click to copy</p>
-                  </TooltipContent>
+                  <TooltipContent>Click to copy room code</TooltipContent>
                 </Tooltip>
               </TooltipProvider>
             </div>
-          </div>
-        </div>
-        <div className={"flex justify-between"}>
-          <div className="mb-4">
-            <Label className="block">Owner</Label>
-            <p className="text-xl">
-              {roomData?.room.owner.name.replace(/"/g, "")}
-            </p>
-          </div>
-          <div className="mb-4 text-right">
-            <Label className="block">Game Status</Label>
-            <p className="text-xl">
-              {roomData?.room.gameStarted ? "Started" : "Not Started"}
-            </p>
-          </div>
-        </div>
-        <ScrollArea className="h-72 w-full rounded-md border mb-4">
-          <div className="p-4">
-            <h4 className="mb-4 text-sm font-medium leading-none">
-              {roomData?.room.members.length} Members
-            </h4>
-            {roomData?.room.members.map((member) => (
-              <div key={member.email}>
-                <div className="flex justify-between items-center">
-                  <div className="text-sm">{member}</div>
-                  <AlertDialog>
-                    <AlertDialogTrigger asChild>
-                      <Button variant="ghost" className="py-2 px-4">
-                        <UserX className="h-4 w-4" />
-                      </Button>
-                    </AlertDialogTrigger>
-                    <AlertDialogContent>
-                      <AlertDialogHeader>
-                        <AlertDialogTitle>Ban User</AlertDialogTitle>
-                        <AlertDialogDescription>
-                          Are you sure you want to ban this user?
-                        </AlertDialogDescription>
-                      </AlertDialogHeader>
-                      <AlertDialogFooter>
-                        <AlertDialogCancel>Cancel</AlertDialogCancel>
-                        <Button onClick={() => handleBanUser(member.email)}>
-                          {banningUserEmail === member.email ? (
-                            <Spinner content="Banning..." />
-                          ) : bannedUserEmail === member.email ? (
-                            <Check className="h-4 w-4" />
-                          ) : (
-                            "Ban"
-                          )}
-                        </Button>
-                      </AlertDialogFooter>
-                    </AlertDialogContent>
-                  </AlertDialog>
-                </div>
-                <Separator className="my-2" />
-              </div>
-            ))}
-          </div>
-        </ScrollArea>
-        <div className="mt-4">
-          <h2 className="text-2xl mb-4">Questions</h2>
-          <AlertDialog>
-            <AlertDialogTrigger asChild>
-              <Button variant="outline">Add Question</Button>
-            </AlertDialogTrigger>
-            <AlertDialogContent>
-              <AlertDialogHeader>
-                <AlertDialogTitle>Add a New Question</AlertDialogTitle>
-                <AlertDialogDescription>
-                  Please fill out the form below to add a new question.
-                </AlertDialogDescription>
-              </AlertDialogHeader>
-              <div className="p-4">
-                <div className={"flex justify-between"}>
-                  <div>
-                    <Label className="block mb-2">Point</Label>
-                    <Input
-                      type={"number"}
-                      value={point}
-                      className={"w-full mb-4 p-2 border rounded"}
-                      onChange={(e) => setPoint(parseInt(e.target.value))}
-                    />
-                  </div>
-                  <div>
-                    <Label className="block mb-2">Time in Seconds</Label>
-                    <Input
-                      type={"number"}
-                      value={time}
-                      className="w-full mb-4 p-2 border rounded"
-                      onChange={(e) => setTime(parseInt(e.target.value))}
-                    />
-                  </div>
-                </div>
-                <Label className="block mb-2">Question</Label>
-                <Input
-                  type="text"
-                  className="w-full mb-4 p-2 border rounded"
-                  placeholder="Enter your question"
-                  value={question}
-                  onChange={(e) => setQuestion(e.target.value)}
-                />
-                <Label className="block mb-2">Answer A</Label>
-                <Input
-                  type="text"
-                  className="w-full mb-4 p-2 border rounded"
-                  placeholder="Enter answer A"
-                  value={answerA}
-                  onChange={(e) => setAnswerA(e.target.value)}
-                />
-                <Label className="block mb-2">Answer B</Label>
-                <Input
-                  type="text"
-                  className="w-full mb-4 p-2 border rounded"
-                  placeholder="Enter answer B"
-                  value={answerB}
-                  onChange={(e) => setAnswerB(e.target.value)}
-                />
-                <Label className="block mb-2">Answer C</Label>
-                <Input
-                  type="text"
-                  className="w-full mb-4 p-2 border rounded"
-                  placeholder="Enter answer C"
-                  value={answerC}
-                  onChange={(e) => setAnswerC(e.target.value)}
-                />
-                <Label className="block mb-2">Answer D</Label>
-                <Input
-                  type="text"
-                  className="w-full mb-4 p-2 border rounded"
-                  placeholder="Enter answer D"
-                  value={answerD}
-                  onChange={(e) => setAnswerD(e.target.value)}
-                />
-                <Label className="block mb-2">Correct Answer</Label>
-                <Select
-                  value={correctAnswer}
-                  onValueChange={(value) => setCorrectAnswer(value)}
-                >
-                  <SelectTrigger className="w-[180px]">
-                    <SelectValue placeholder="Select an answer" />
-                  </SelectTrigger>
-                  <SelectContent>
-                    <SelectGroup>
-                      <SelectLabel>Answers</SelectLabel>
-                      <SelectItem value="a">A</SelectItem>
-                      <SelectItem value="b">B</SelectItem>
-                      <SelectItem value="c">C</SelectItem>
-                      <SelectItem value="d">D</SelectItem>
-                    </SelectGroup>
-                  </SelectContent>
-                </Select>
-              </div>
-              <AlertDialogFooter>
-                <AlertDialogCancel>Cancel</AlertDialogCancel>
-                <Button onClick={handleAddQuestion} disabled={addingQuestion}>
-                  {addingQuestion ? (
-                    <Spinner content="Adding..." />
-                  ) : addedQuestion ? (
-                    <Check className="h-4 w-4" />
-                  ) : (
-                    "Add Question"
-                  )}
-                </Button>
-              </AlertDialogFooter>
-            </AlertDialogContent>
-          </AlertDialog>
-          <ScrollArea className="h-96 w-full rounded-md border mt-4">
-            <div className="p-4">
-              <h4 className="mb-4 text-sm font-medium leading-none">
-                {questions.length} Questions
-              </h4>
-              {questions.map((question, index) => (
-                <div key={index} className="mb-4 relative">
-                  <p className="font-bold">
-                    {index + 1} - {question.question}
-                  </p>
-                  point: {question.point} time: {question.time}
-                  <ul className="list-disc pl-5">
-                    <li>A: {question.answers.a}</li>
-                    <li>B: {question.answers.b}</li>
-                    <li>C: {question.answers.c}</li>
-                    <li>D: {question.answers.d}</li>
-                  </ul>
-                  <p className="italic">Correct Answer: {question.correct}</p>
-                  <Separator className="my-2" />
-                  <AlertDialog>
-                    <AlertDialogTrigger asChild>
-                      <Button
-                        variant="ghost"
-                        className="absolute top-0 right-0"
-                      >
-                        <Trash className="h-4 w-4" />
-                      </Button>
-                    </AlertDialogTrigger>
-                    <AlertDialogContent>
-                      <AlertDialogHeader>
-                        <AlertDialogTitle>Delete Question</AlertDialogTitle>
-                        <AlertDialogDescription>
-                          Are you sure you want to delete this question?
-                        </AlertDialogDescription>
-                      </AlertDialogHeader>
-                      <AlertDialogFooter>
-                        <AlertDialogCancel>Cancel</AlertDialogCancel>
-                        <Button
-                          onClick={() => handleDeleteQuestion(question.id)}
-                        >
-                          {deletingQuestionId === question.id ? (
-                            <Spinner content="Deleting..." />
-                          ) : deletedQuestionId === question.id ? (
-                            <Check className="h-4 w-4" />
-                          ) : (
-                            "Delete"
-                          )}
-                        </Button>
-                      </AlertDialogFooter>
-                    </AlertDialogContent>
-                  </AlertDialog>
-                </div>
-              ))}
-            </div>
-          </ScrollArea>
-        </div>
-        <div className="mt-4 flex justify-between">
-          <AlertDialog>
-            <AlertDialogTrigger asChild>
-              <Button variant="destructive">Delete Room</Button>
-            </AlertDialogTrigger>
-            <AlertDialogContent>
-              <AlertDialogHeader>
-                <AlertDialogTitle>Delete Room</AlertDialogTitle>
-                <AlertDialogDescription>
-                  Are you sure you want to delete this room? This action cannot
-                  be undone.
-                </AlertDialogDescription>
-              </AlertDialogHeader>
-              <AlertDialogFooter>
-                <AlertDialogCancel>Cancel</AlertDialogCancel>
-                <Button onClick={handleDeleteRoom} disabled={deletingRoom}>
-                  {deletingRoom ? (
-                    <Spinner content="Deleting..." />
-                  ) : deletedRoom ? (
-                    <Check className="h-4 w-4" />
-                  ) : (
-                    "Delete"
-                  )}
-                </Button>
-              </AlertDialogFooter>
-            </AlertDialogContent>
-          </AlertDialog>
-          {roomData?.room.gameStarted ? (
-            <AlertDialog>
-              <AlertDialogTrigger asChild>
-                <Button variant="destructive">End the Game</Button>
-              </AlertDialogTrigger>
-              <AlertDialogContent>
-                <AlertDialogHeader>
-                  <AlertDialogTitle>End the Game</AlertDialogTitle>
-                  <AlertDialogDescription>
-                    Are you sure you want to end the game?
-                  </AlertDialogDescription>
-                </AlertDialogHeader>
-                <AlertDialogFooter>
-                  <AlertDialogCancel>Cancel</AlertDialogCancel>
-                  <Button onClick={handleEndGame} disabled={endingGame}>
-                    {endingGame ? (
-                      <Spinner content="Ending..." />
-                    ) : endedGame ? (
-                      <Check className="h-4 w-4" />
+          </CardHeader>
+          <CardContent>
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+              {/* Members Section */}
+              <Card>
+                <CardHeader>
+                  <CardTitle className="text-lg">
+                    Members ({roomData?.room.members.length})
+                  </CardTitle>
+                </CardHeader>
+                <CardContent>
+                  <ScrollArea className="h-64">
+                    {roomData?.room.members.map((member) => (
+                      <div key={member.id} className="group">
+                        <div className="flex items-center justify-between py-2">
+                          <span className="text-sm">{member.name}</span>
+                          <AlertDialog>
+                            <AlertDialogTrigger asChild>
+                              <Button
+                                variant="ghost"
+                                size="sm"
+                                className="opacity-0 group-hover:opacity-100"
+                              >
+                                <UserX className="h-4 w-4" />
+                              </Button>
+                            </AlertDialogTrigger>
+                            <AlertDialogContent>
+                              <AlertDialogHeader>
+                                <AlertDialogTitle>Ban User</AlertDialogTitle>
+                                <AlertDialogDescription>
+                                  Are you sure you want to ban this user?
+                                </AlertDialogDescription>
+                              </AlertDialogHeader>
+                              <AlertDialogFooter>
+                                <AlertDialogCancel>Cancel</AlertDialogCancel>
+                                <Button
+                                  onClick={() => handleBanUser(member.id)}
+                                >
+                                  {banningUserEmail === member.id ? (
+                                    <span className="animate-spin">...</span>
+                                  ) : bannedUserEmail === member.id ? (
+                                    <Check className="h-4 w-4" />
+                                  ) : (
+                                    "Ban"
+                                  )}
+                                </Button>
+                              </AlertDialogFooter>
+                            </AlertDialogContent>
+                          </AlertDialog>
+                        </div>
+                        <Separator />
+                      </div>
+                    ))}
+                  </ScrollArea>
+                </CardContent>
+              </Card>
+
+              {/* Game Status Section */}
+              <Card>
+                <CardHeader>
+                  <CardTitle className="text-lg">Game Status</CardTitle>
+                </CardHeader>
+                <CardContent>
+                  <div className="flex flex-col gap-4">
+                    <div className="text-center p-4 rounded-lg border">
+                      <span className="text-xl font-semibold">
+                        {roomData?.room.gameStarted
+                          ? "Game in Progress"
+                          : "Waiting to Start"}
+                      </span>
+                    </div>
+                    {roomData?.room.gameStarted ? (
+                      <AlertDialog>
+                        <AlertDialogTrigger asChild>
+                          <Button variant="destructive" className="w-full">
+                            End Game
+                          </Button>
+                        </AlertDialogTrigger>
+                        <AlertDialogContent>
+                          <AlertDialogHeader>
+                            <AlertDialogTitle>End the Game</AlertDialogTitle>
+                            <AlertDialogDescription>
+                              Are you sure you want to end the game?
+                            </AlertDialogDescription>
+                          </AlertDialogHeader>
+                          <AlertDialogFooter>
+                            <AlertDialogCancel>Cancel</AlertDialogCancel>
+                            <Button
+                              onClick={handleEndGame}
+                              disabled={endingGame}
+                            >
+                              {endingGame ? "Ending..." : "End Game"}
+                            </Button>
+                          </AlertDialogFooter>
+                        </AlertDialogContent>
+                      </AlertDialog>
                     ) : (
-                      "End the Game"
+                      <AlertDialog>
+                        <AlertDialogTrigger asChild>
+                          <Button className="w-full">Start Game</Button>
+                        </AlertDialogTrigger>
+                        <AlertDialogContent>
+                          <AlertDialogHeader>
+                            <AlertDialogTitle>Start the Game</AlertDialogTitle>
+                            <AlertDialogDescription>
+                              Are you sure you want to start the game?
+                            </AlertDialogDescription>
+                          </AlertDialogHeader>
+                          <AlertDialogFooter>
+                            <AlertDialogCancel>Cancel</AlertDialogCancel>
+                            <Button
+                              onClick={handleStartGame}
+                              disabled={startingGame}
+                            >
+                              {startingGame ? "Starting..." : "Start Game"}
+                            </Button>
+                          </AlertDialogFooter>
+                        </AlertDialogContent>
+                      </AlertDialog>
                     )}
-                  </Button>
-                </AlertDialogFooter>
-              </AlertDialogContent>
-            </AlertDialog>
-          ) : (
-            <>
+                  </div>
+                </CardContent>
+              </Card>
+            </div>
+          </CardContent>
+        </Card>
+
+        {/* Questions Section */}
+        <Card>
+          <CardHeader>
+            <div className="flex items-center justify-between">
+              <CardTitle className="text-2xl">
+                Questions ({questions.length})
+              </CardTitle>
               <AlertDialog>
                 <AlertDialogTrigger asChild>
-                  <Button variant="">Start the Game</Button>
+                  <Button>Add Question</Button>
                 </AlertDialogTrigger>
-                <AlertDialogContent>
+                <AlertDialogContent className="max-w-2xl">
                   <AlertDialogHeader>
-                    <AlertDialogTitle>Start the Game</AlertDialogTitle>
+                    <AlertDialogTitle>Add New Question</AlertDialogTitle>
                     <AlertDialogDescription>
-                      Are you sure you want to start the game?
+                      Fill out the details for your new question
                     </AlertDialogDescription>
                   </AlertDialogHeader>
+                  <div className="grid grid-cols-2 gap-4 py-4">
+                    <div className="space-y-2">
+                      <Label>Points</Label>
+                      <Input
+                        type="number"
+                        value={point}
+                        onChange={(e) => setPoint(parseInt(e.target.value))}
+                      />
+                    </div>
+                    <div className="space-y-2">
+                      <Label>Time (seconds)</Label>
+                      <Input
+                        type="number"
+                        value={time}
+                        onChange={(e) => setTime(parseInt(e.target.value))}
+                      />
+                    </div>
+                    <div className="col-span-2 space-y-2">
+                      <Label>Question</Label>
+                      <Input
+                        value={question}
+                        onChange={(e) => setQuestion(e.target.value)}
+                      />
+                    </div>
+                    <div className="space-y-2">
+                      <Label>Answer A</Label>
+                      <Input
+                        value={answerA}
+                        onChange={(e) => setAnswerA(e.target.value)}
+                      />
+                    </div>
+                    <div className="space-y-2">
+                      <Label>Answer B</Label>
+                      <Input
+                        value={answerB}
+                        onChange={(e) => setAnswerB(e.target.value)}
+                      />
+                    </div>
+                    <div className="space-y-2">
+                      <Label>Answer C</Label>
+                      <Input
+                        value={answerC}
+                        onChange={(e) => setAnswerC(e.target.value)}
+                      />
+                    </div>
+                    <div className="space-y-2">
+                      <Label>Answer D</Label>
+                      <Input
+                        value={answerD}
+                        onChange={(e) => setAnswerD(e.target.value)}
+                      />
+                    </div>
+                    <div className="col-span-2 space-y-2">
+                      <Label>Correct Answer</Label>
+                      <Select
+                        value={correctAnswer}
+                        onValueChange={setCorrectAnswer}
+                      >
+                        <SelectTrigger>
+                          <SelectValue placeholder="Select correct answer" />
+                        </SelectTrigger>
+                        <SelectContent>
+                          <SelectItem value="a">A</SelectItem>
+                          <SelectItem value="b">B</SelectItem>
+                          <SelectItem value="c">C</SelectItem>
+                          <SelectItem value="d">D</SelectItem>
+                        </SelectContent>
+                      </Select>
+                    </div>
+                  </div>
                   <AlertDialogFooter>
                     <AlertDialogCancel>Cancel</AlertDialogCancel>
-                    <Button onClick={handleStartGame} disabled={startingGame}>
-                      {startingGame ? (
-                        <Spinner content="Starting..." />
-                      ) : startedGame ? (
-                        <Check className="h-4 w-4" />
-                      ) : (
-                        "Start the Game"
-                      )}
+                    <Button
+                      onClick={handleAddQuestion}
+                      disabled={addingQuestion}
+                    >
+                      {addingQuestion ? "Adding..." : "Add Question"}
                     </Button>
                   </AlertDialogFooter>
                 </AlertDialogContent>
               </AlertDialog>
-            </>
-          )}
-        </div>
+            </div>
+          </CardHeader>
+          <CardContent>
+            <ScrollArea className="h-[32rem] w-full rounded-md border">
+              <div className="p-4 grid gap-4">
+                {questions.map((question, index) => (
+                  <Card key={index} className="relative">
+                    <CardHeader>
+                      <div className="flex items-start justify-between">
+                        <div>
+                          <CardTitle className="text-lg">
+                            Question {index + 1}
+                          </CardTitle>
+                          <CardDescription>
+                            Points: {question.point} | Time: {question.time}s
+                          </CardDescription>
+                        </div>
+                        <AlertDialog>
+                          <AlertDialogTrigger asChild>
+                            <Button variant="ghost" size="sm">
+                              <Trash className="h-4 w-4" />
+                            </Button>
+                          </AlertDialogTrigger>
+                          <AlertDialogContent>
+                            <AlertDialogHeader>
+                              <AlertDialogTitle>
+                                Delete Question
+                              </AlertDialogTitle>
+                              <AlertDialogDescription>
+                                Are you sure you want to delete this question?
+                              </AlertDialogDescription>
+                            </AlertDialogHeader>
+                            <AlertDialogFooter>
+                              <AlertDialogCancel>Cancel</AlertDialogCancel>
+                              <Button
+                                onClick={() =>
+                                  handleDeleteQuestion(question.id)
+                                }
+                              >
+                                {deletingQuestionId === question.id
+                                  ? "Deleting..."
+                                  : "Delete"}
+                              </Button>
+                            </AlertDialogFooter>
+                          </AlertDialogContent>
+                        </AlertDialog>
+                      </div>
+                    </CardHeader>
+                    <CardContent>
+                      <p className="font-medium mb-4">{question.question}</p>
+                      <div className="grid grid-cols-2 gap-4">
+                        <div className="space-y-2">
+                          <div className="flex items-center gap-2">
+                            <span className="font-semibold">A:</span>
+                            <span>{question.answers.a}</span>
+                          </div>
+                          <div className="flex items-center gap-2">
+                            <span className="font-semibold">B:</span>
+                            <span>{question.answers.b}</span>
+                          </div>
+                        </div>
+                        <div className="space-y-2">
+                          <div className="flex items-center gap-2">
+                            <span className="font-semibold">C:</span>
+                            <span>{question.answers.c}</span>
+                          </div>
+                          <div className="flex items-center gap-2">
+                            <span className="font-semibold">D:</span>
+                            <span>{question.answers.d}</span>
+                          </div>
+                        </div>
+                      </div>
+                      <div className="mt-4 text-sm">
+                        Correct Answer: {question.correct.toUpperCase()}
+                      </div>
+                    </CardContent>
+                  </Card>
+                ))}
+              </div>
+            </ScrollArea>
+          </CardContent>
+          <CardFooter className="flex justify-between">
+            <AlertDialog>
+              <AlertDialogTrigger asChild>
+                <Button variant="destructive" className={"gap-2"}>
+                  <Trash className="h-4 w-4" />
+                  Delete Room
+                </Button>
+              </AlertDialogTrigger>
+              <AlertDialogContent>
+                <AlertDialogHeader>
+                  <AlertDialogTitle>Delete Room</AlertDialogTitle>
+                  <AlertDialogDescription>
+                    Are you sure you want to delete this room? This action
+                    cannot be undone.
+                  </AlertDialogDescription>
+                </AlertDialogHeader>
+                <AlertDialogFooter>
+                  <AlertDialogCancel>Cancel</AlertDialogCancel>
+                  <Button onClick={handleDeleteRoom} disabled={deletingRoom}>
+                    {deletingRoom ? "Deleting..." : "Delete Room"}
+                  </Button>
+                </AlertDialogFooter>
+              </AlertDialogContent>
+            </AlertDialog>
+            <Button
+              className={"gap-2 text-right"}
+              onClick={() => window.open("/leaderboard/" + roomCode, "_blank")}
+            >
+              <ListOrdered className="h-4 w-4" />
+              Leaderboard
+            </Button>
+          </CardFooter>
+        </Card>
       </div>
     </div>
   );
 };
-
 export default ManageRoom;

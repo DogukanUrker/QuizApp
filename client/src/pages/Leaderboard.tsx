@@ -2,8 +2,7 @@ import React, { useEffect, useState } from "react";
 import axios from "axios";
 import { apiURL } from "@/constans.ts";
 import { useParams } from "react-router-dom";
-import { ScrollArea } from "@/components/ui/scroll-area.tsx";
-import { Separator } from "@/components/ui/separator.tsx";
+import { ScrollArea } from "@/components/ui/scroll-area";
 import { Check, Sparkles, Trophy, X } from "lucide-react";
 import {
   AlertDialog,
@@ -12,7 +11,16 @@ import {
   AlertDialogDescription,
   AlertDialogTitle,
   AlertDialogTrigger,
-} from "@/components/ui/alert-dialog.tsx";
+} from "@/components/ui/alert-dialog";
+import {
+  Table,
+  TableBody,
+  TableCell,
+  TableHead,
+  TableHeader,
+  TableRow,
+} from "@/components/ui/table";
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 
 interface Member {
   id: string;
@@ -25,6 +33,7 @@ interface Member {
 const Leaderboard = () => {
   const [leaderboard, setLeaderboard] = useState<Member[]>([]);
   const [error, setError] = useState<string | null>(null);
+  const [loading, setLoading] = useState<boolean>(true);
   const userID = localStorage.getItem("userID");
   const [roomName, setRoomName] = useState("");
   const [userScore, setUserScore] = useState<Member | null>(null);
@@ -54,103 +63,201 @@ const Leaderboard = () => {
           ? err.response.data.error
           : "Error fetching leaderboard",
       );
+    } finally {
+      setLoading(false);
     }
   };
 
   useEffect(() => {
-    // Initial fetch with dialog
     fetchLeaderboard(true);
-
-    // Set up interval for updates without dialog
     const interval = setInterval(() => fetchLeaderboard(false), 3000);
     return () => clearInterval(interval);
   }, [roomCode]);
 
-  if (error) {
-    return <div>Error: {error}</div>;
+  if (loading) {
+    return (
+      <div className="flex min-h-screen items-center justify-center">
+        <Card className="w-full max-w-md">
+          <CardContent className="pt-6">
+            <div className="flex items-center justify-center text-gray-500">
+              <span className="text-lg font-medium">Loading...</span>
+            </div>
+          </CardContent>
+        </Card>
+      </div>
+    );
   }
 
-  return (
-    <div className={"flex items-center justify-center min-h-screen"}>
-      <div className={"h-11/12 w-full md:w-8/12"}>
-        <h1 className={"text-center text-xl mb-2 font-medium select-none"}>
-          {roomName} - Leaderboard
-        </h1>
-        <ScrollArea className="md:h-96 h-11/12 w-full rounded-md border p-4">
-          <h4 className="mb-4 text-sm font-medium leading-none">
-            {leaderboard?.length} Members
-          </h4>
-          {leaderboard.map((member, index) => (
-            <div key={index} className="mb-2 w-full">
-              <div
-                className={`grid grid-cols-4 gap-4 items-center ${userID === member.id ? "dark:bg-neutral-800 hover:dark:bg-neutral-800/75 bg-neutral-200 hover:bg-neutral-200/75 duration-150 rounded py-2 pl-2 cursor-pointer" : ""}`}
-                onClick={() => {
-                  if (userID === member.id) {
-                    setIsDialogOpen(true);
-                  }
-                }}
-              >
-                <div className="flex items-center">
-                  <span className="mr-1">{index + 1}.</span>
-                  <span>{member.name}</span>
-                </div>
-                <div className="flex items-center justify-center">
-                  <Check className="mr-1" />
-                  <span>{member.trueAnswers}</span>
-                </div>
-                <div className="flex items-center justify-center">
-                  <X className="mr-1" />
-                  <span>{member.falseAnswers}</span>
-                </div>
-                <div className="flex items-center justify-center font-bold">
-                  <Sparkles className="mr-1" />
-                  <span>{member.points}</span>
-                </div>
-              </div>
-              <Separator className="my-2" />
+  if (error) {
+    return (
+      <div className="flex min-h-screen items-center justify-center">
+        <Card className="w-full max-w-md">
+          <CardContent className="pt-6">
+            <div className="flex items-center justify-center text-red-500">
+              <X className="mr-2 h-6 w-6" />
+              <span className="text-lg font-medium">Error: {error}</span>
             </div>
-          ))}
-        </ScrollArea>
+          </CardContent>
+        </Card>
       </div>
+    );
+  }
+
+  document.title = "Leaderboard - " + roomName;
+
+  return (
+    <div className="flex min-h-screen items-center justify-center p-0 md:p-4">
+      <div className="w-full md:w-8/12">
+        <CardHeader className="pb-2">
+          <CardTitle className="text-center text-2xl font-semibold">
+            {roomName} - Leaderboard
+          </CardTitle>
+        </CardHeader>
+        <CardContent>
+          <ScrollArea className="h-[32rem] w-full rounded-md border">
+            <div className="p-4">
+              <div className="mb-4 flex items-center justify-between">
+                <h4 className="text-sm font-medium text-muted-foreground">
+                  {leaderboard?.length} Members
+                </h4>
+              </div>
+              <div className="w-full overflow-x-auto">
+                <Table className="w-full table-fixed">
+                  <TableHeader>
+                    <TableRow>
+                      <TableHead className="w-[35%] min-w-[120px]">
+                        Player
+                      </TableHead>
+                      <TableHead className="w-[25%] min-w-[80px] text-center">
+                        Points
+                      </TableHead>
+                      <TableHead className="w-[20%] min-w-[80px] text-center">
+                        Correct
+                      </TableHead>
+                      <TableHead className="w-[20%] min-w-[80px] text-center">
+                        Wrong
+                      </TableHead>
+                    </TableRow>
+                  </TableHeader>
+                  <TableBody>
+                    {leaderboard.map((member, index) => (
+                      <TableRow
+                        key={index}
+                        className={`${
+                          userID === member.id
+                            ? "cursor-pointer bg-accent hover:bg-accent/90 dark:bg-accent/50 dark:hover:bg-accent/40"
+                            : ""
+                        } transition-colors duration-200`}
+                        onClick={() => {
+                          if (userID === member.id) {
+                            setIsDialogOpen(true);
+                          }
+                        }}
+                      >
+                        <TableCell className="w-[35%] min-w-[120px]">
+                          <div className="flex items-center gap-2">
+                            {index === 0 ? (
+                              <Trophy className="h-4 w-4 text-yellow-500" />
+                            ) : index === 1 ? (
+                              <Trophy className="h-4 w-4 text-gray-500" />
+                            ) : index === 2 ? (
+                              <Trophy className="h-4 w-4 text-orange-500" />
+                            ) : (
+                              <span>{index + 1}.</span>
+                            )}
+                            <span className="truncate">{member.name}</span>
+                          </div>
+                        </TableCell>
+                        <TableCell className="w-[25%] min-w-[80px] text-center font-bold">
+                          <div className="flex items-center justify-center gap-1">
+                            <Sparkles className="h-4 w-4 text-yellow-500 hidden md:block" />
+                            <span>{member.points}</span>
+                          </div>
+                        </TableCell>
+                        <TableCell className="w-[20%] min-w-[80px] text-center">
+                          <div className="flex items-center justify-center gap-1">
+                            <Check className="h-4 w-4 text-green-500 hidden md:block" />
+                            <span>{member.trueAnswers}</span>
+                          </div>
+                        </TableCell>
+                        <TableCell className="w-[20%] min-w-[80px] text-center">
+                          <div className="flex items-center justify-center gap-1">
+                            <X className="h-4 w-4 text-red-500 hidden md:block" />
+                            <span>{member.falseAnswers}</span>
+                          </div>
+                        </TableCell>
+                      </TableRow>
+                    ))}
+                  </TableBody>
+                </Table>
+              </div>
+            </div>
+          </ScrollArea>
+        </CardContent>
+      </div>
+
       {userScore && (
         <AlertDialog open={isDialogOpen} onOpenChange={setIsDialogOpen}>
           <AlertDialogTrigger />
           <AlertDialogContent>
-            <AlertDialogTitle>Your Score</AlertDialogTitle>
+            <AlertDialogTitle className="text-xl font-semibold">
+              Your Score
+            </AlertDialogTitle>
             <AlertDialogDescription>
-              <div className={"flex justify-between"}>
-                <div className="flex items-center">
-                  <Trophy className={"mr-1"} />
-                  <span className="mr-1">Rank</span>
-                  <b>{userRank}</b>
+              <div className="space-y-4">
+                <div className="grid grid-cols-2 gap-4">
+                  <Card>
+                    <CardContent className="flex items-center justify-between p-4">
+                      <div className="flex items-center gap-2">
+                        <Trophy className="h-5 w-5 text-yellow-500" />
+                        <span className="text-sm">Rank</span>
+                      </div>
+                      <span className="text-lg font-bold">{userRank}</span>
+                    </CardContent>
+                  </Card>
+                  <Card>
+                    <CardContent className="flex items-center justify-between p-4">
+                      <div className="flex items-center gap-2">
+                        <Sparkles className="h-5 w-5 text-yellow-500" />
+                        <span className="text-sm">Points</span>
+                      </div>
+                      <span className="text-lg font-bold">
+                        {userScore.points}
+                      </span>
+                    </CardContent>
+                  </Card>
                 </div>
-                <div className="flex items-center">
-                  <Sparkles className="mr-1" />
-                  <span>
-                    Points <b>{userScore.points}</b>
-                  </span>
+                <div className="grid grid-cols-2 gap-4">
+                  <Card>
+                    <CardContent className="flex items-center justify-between p-4">
+                      <div className="flex items-center gap-2">
+                        <Check className="h-5 w-5 text-green-500" />
+                        <span className="text-sm">Correct</span>
+                      </div>
+                      <span className="text-lg font-bold">
+                        {userScore.trueAnswers}
+                      </span>
+                    </CardContent>
+                  </Card>
+                  <Card>
+                    <CardContent className="flex items-center justify-between p-4">
+                      <div className="flex items-center gap-2">
+                        <X className="h-5 w-5 text-red-500" />
+                        <span className="text-sm">Wrong</span>
+                      </div>
+                      <span className="text-lg font-bold">
+                        {userScore.falseAnswers}
+                      </span>
+                    </CardContent>
+                  </Card>
                 </div>
+                <AlertDialogAction
+                  className="w-full bg-primary hover:bg-primary/90"
+                  onClick={() => setIsDialogOpen(false)}
+                >
+                  See Others
+                </AlertDialogAction>
               </div>
-              <div className={"flex justify-between my-2"}>
-                <div className="flex items-center">
-                  <Check className="mr-1" />
-                  <span>
-                    True Answers <b>{userScore.trueAnswers}</b>
-                  </span>
-                </div>
-                <div className="flex items-center">
-                  <X className="mr-1" />
-                  <span>
-                    False Answers <b>{userScore.falseAnswers}</b>
-                  </span>
-                </div>
-              </div>
-              <AlertDialogAction
-                className={"w-full mt-2"}
-                onClick={() => setIsDialogOpen(false)}
-              >
-                See Others
-              </AlertDialogAction>
             </AlertDialogDescription>
           </AlertDialogContent>
         </AlertDialog>

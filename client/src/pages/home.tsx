@@ -1,4 +1,4 @@
-import { Button } from "@/components/ui/button.tsx";
+import { Button } from "@/components/ui/button";
 import {
   AlertDialog,
   AlertDialogCancel,
@@ -10,38 +10,65 @@ import {
 } from "@/components/ui/alert-dialog";
 import { useState } from "react";
 import { Input } from "@/components/ui/input";
+import { useNavigate } from "react-router-dom";
 import axios from "axios";
-import Spinner from "@/components/loading-spinner.tsx";
-import { apiURL } from "@/constans.ts";
+import Spinner from "@/components/loading-spinner";
+import { apiURL } from "@/constans";
+import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Home as HomeIcon, Users, X } from "lucide-react";
+
+interface RoomResponse {
+  error?: boolean;
+  message?: string;
+  room: {
+    code: string;
+    name: string;
+  };
+}
 
 const Home = () => {
+  const navigate = useNavigate();
   const [loading, setLoading] = useState(false);
   const [showJoinDialog, setShowJoinDialog] = useState(false);
   const [showCreateDialog, setShowCreateDialog] = useState(false);
+  const [error, setError] = useState<string | null>(null);
 
-  const joinRoomDialog = () => {
-    setShowJoinDialog(true);
-  };
+  const token = localStorage.getItem("token");
+  const userName = localStorage.getItem("userName");
+  const userEmail = localStorage.getItem("userEmail");
+  const userID = localStorage.getItem("userID");
 
-  const createRoomDialog = () => {
-    setShowCreateDialog(true);
+  const handleApiError = (error: unknown) => {
+    setError(
+      axios.isAxiosError(error) && error.response
+        ? error.response.data.error
+        : "An unexpected error occurred",
+    );
+    setLoading(false);
   };
 
   const joinRoom = async () => {
     setLoading(true);
-    const token = localStorage.getItem("token");
-    const name = localStorage.getItem("userName");
-    const email = localStorage.getItem("userEmail");
-    const userID = localStorage.getItem("userID");
+    setError(null);
+
+    const roomCode = (document.getElementById("room-code") as HTMLInputElement)
+      ?.value;
+
+    if (!roomCode) {
+      setError("Room code is required");
+      setLoading(false);
+      return;
+    }
+
     try {
-      const response = await axios.post(
-        apiURL + "joinRoom",
+      const response = await axios.post<RoomResponse>(
+        `${apiURL}joinRoom`,
         {
-          roomCode: (document.getElementById("room-code") as HTMLInputElement)
-            ?.value,
-          name: name,
-          email: email,
-          userID: userID,
+          roomCode,
+          name: userName,
+          email: userEmail,
+          userID,
         },
         {
           headers: {
@@ -52,14 +79,13 @@ const Home = () => {
       );
 
       if (response.data.error) {
-        console.log(response.data.message);
+        setError(response.data.message || "Failed to join room");
       } else {
-        console.log(response.data);
         localStorage.setItem("room", JSON.stringify(response.data));
-        window.location.href = "/room/" + response.data.room.code;
+        navigate(`/room/${response.data.room.code}`);
       }
     } catch (error) {
-      console.error("Error during join room request:", error);
+      handleApiError(error);
     } finally {
       setLoading(false);
     }
@@ -67,17 +93,24 @@ const Home = () => {
 
   const createRoom = async () => {
     setLoading(true);
-    const token = localStorage.getItem("token");
-    const name = localStorage.getItem("userName");
-    const email = localStorage.getItem("userEmail");
+    setError(null);
+
+    const roomName = (document.getElementById("room-name") as HTMLInputElement)
+      ?.value;
+
+    if (!roomName) {
+      setError("Room name is required");
+      setLoading(false);
+      return;
+    }
+
     try {
-      const response = await axios.post(
-        apiURL + "createRoom",
+      const response = await axios.post<RoomResponse>(
+        `${apiURL}createRoom`,
         {
-          name: (document.getElementById("room-name") as HTMLInputElement)
-            ?.value,
-          userName: name,
-          email: email,
+          name: roomName,
+          userName,
+          email: userEmail,
         },
         {
           headers: {
@@ -88,77 +121,104 @@ const Home = () => {
       );
 
       if (response.data.error) {
-        console.log(response.data.message);
+        setError(response.data.message || "Failed to create room");
       } else {
-        console.log(response.data);
         localStorage.setItem("room", JSON.stringify(response.data));
-        window.location.href = "/room/" + response.data.room.code;
+        navigate(`/room/${response.data.room.code}`);
       }
     } catch (error) {
-      console.error("Error during create room request:", error);
+      handleApiError(error);
     } finally {
       setLoading(false);
     }
   };
 
   return (
-    <div className="flex flex-col items-center justify-center min-h-screen p-4">
-      <div className="space-y-4">
-        <Button onClick={createRoomDialog} className="w-full">
-          Create Room
-        </Button>
-        <Button onClick={joinRoomDialog} className="w-full">
-          Join Room
-        </Button>
-      </div>
+    <div className="flex min-h-screen items-center justify-center p-4">
+      <Card className="w-full max-w-md">
+        <CardHeader>
+          <CardTitle className="flex items-center justify-center gap-2 text-2xl font-semibold">
+            Welcome to Quiz App
+          </CardTitle>
+        </CardHeader>
+        <CardContent className="space-y-4">
+          {error && (
+            <Alert variant="destructive">
+              <X className="h-4 w-4" />
+              <AlertTitle>Error</AlertTitle>
+              <AlertDescription>{error}</AlertDescription>
+            </Alert>
+          )}
+
+          <Button
+            onClick={() => setShowCreateDialog(true)}
+            className="w-full flex items-center justify-center gap-2"
+          >
+            <HomeIcon className="h-4 w-4" />
+            Create Room
+          </Button>
+
+          <Button
+            onClick={() => setShowJoinDialog(true)}
+            className="w-full flex items-center justify-center gap-2"
+          >
+            <Users className="h-4 w-4" />
+            Join Room
+          </Button>
+        </CardContent>
+      </Card>
+
       <AlertDialog open={showJoinDialog} onOpenChange={setShowJoinDialog}>
         <AlertDialogContent>
           <AlertDialogHeader>
-            <AlertDialogTitle>Join Room</AlertDialogTitle>
+            <AlertDialogTitle className="flex items-center gap-2">
+              <Users className="h-5 w-5" />
+              Join Room
+            </AlertDialogTitle>
           </AlertDialogHeader>
           <AlertDialogDescription>
-            Please enter the room code.
+            Enter the room code to join an existing quiz room.
           </AlertDialogDescription>
           <Input
             id="room-code"
-            placeholder="Room code"
+            placeholder="Enter room code"
             type="text"
             autoComplete="off"
             required
             className="mt-2"
           />
           <AlertDialogFooter>
-            <AlertDialogCancel onClick={() => setShowJoinDialog(false)}>
-              Cancel
-            </AlertDialogCancel>
+            <AlertDialogCancel>Cancel</AlertDialogCancel>
             <Button onClick={joinRoom} disabled={loading}>
-              {loading ? <Spinner content="Join" /> : "Join"}
+              {loading ? <Spinner content="Joining..." /> : "Join Room"}
             </Button>
           </AlertDialogFooter>
         </AlertDialogContent>
       </AlertDialog>
+
       <AlertDialog open={showCreateDialog} onOpenChange={setShowCreateDialog}>
         <AlertDialogContent>
           <AlertDialogHeader>
-            <AlertDialogTitle>Create Room</AlertDialogTitle>
+            <AlertDialogTitle className="flex items-center gap-2">
+              <HomeIcon className="h-5 w-5" />
+              Create Room
+            </AlertDialogTitle>
           </AlertDialogHeader>
           <AlertDialogDescription>
-            Are you sure you want to create a new room?
+            Create a new quiz room and invite others to join.
           </AlertDialogDescription>
           <Input
             id="room-name"
-            placeholder="Room name"
+            placeholder="Enter room name"
             type="text"
             autoComplete="off"
             required
             className="mt-2"
           />
           <AlertDialogFooter>
-            <AlertDialogCancel onClick={() => setShowCreateDialog(false)}>
-              Cancel
-            </AlertDialogCancel>
+            <AlertDialogCancel>Cancel</AlertDialogCancel>
             <Button onClick={createRoom} disabled={loading}>
-              {loading ? <Spinner content="Create" /> : "Create"}
+              {loading ? <Spinner content="Creating..." /> : "Create Room"}
             </Button>
           </AlertDialogFooter>
         </AlertDialogContent>

@@ -1,3 +1,4 @@
+import React, { useEffect, useState } from "react";
 import { Button } from "@/components/ui/button";
 import {
   Card,
@@ -20,10 +21,10 @@ import {
   AlertDialogHeader,
   AlertDialogTitle,
 } from "@/components/ui/alert-dialog";
+import { ArrowRight, Asterisk, Lock, Mail, User } from "lucide-react";
 import axios from "axios";
-import React, { useEffect, useState } from "react";
-import Spinner from "@/components/loading-spinner.tsx";
-import { apiURL } from "@/constans.ts";
+import Spinner from "@/components/loading-spinner";
+import { apiURL } from "@/constans";
 
 const Auth = () => {
   const [formData, setFormData] = useState({
@@ -34,51 +35,10 @@ const Auth = () => {
     signupPassword: "",
   });
 
-  const [activeTab, setActiveTab] = useState("signup"); // Active tab state
-  const [showDialog, setShowDialog] = useState(false); // Dialog state
+  const [activeTab, setActiveTab] = useState("signup");
+  const [showDialog, setShowDialog] = useState(false);
   const [loading, setLoading] = useState(false);
   const [showJoinDialog, setShowJoinDialog] = useState(false);
-
-  const joinRoomDialog = () => {
-    setShowJoinDialog(true);
-  };
-
-  const joinRoom = async () => {
-    setLoading(true);
-    const nameElement = document.getElementById("username") as HTMLInputElement;
-    const name = nameElement?.value;
-
-    try {
-      const response = await axios.post(
-        apiURL + "joinGuest",
-        {
-          roomCode: (document.getElementById("room-code") as HTMLInputElement)
-            ?.value,
-          name: name,
-        },
-        {
-          headers: {
-            "Content-Type": "application/json",
-          },
-        },
-      );
-
-      if (response.data.error) {
-        console.log(response.data.message);
-      } else {
-        console.log(response.data);
-        localStorage.setItem("room", JSON.stringify(response.data));
-        localStorage.setItem("userName", name || "Guest");
-        localStorage.setItem("userEmail", "guest@app.com");
-        localStorage.setItem("userID", response.data.room.guest.id);
-        window.location.href = "/room/" + response.data.room.code;
-      }
-    } catch (error) {
-      console.error("Error during join room request:", error);
-    } finally {
-      setLoading(false);
-    }
-  };
 
   useEffect(() => {
     if (window.location.pathname === "/login") {
@@ -103,9 +63,8 @@ const Auth = () => {
       if (response.data.error) {
         console.log(response.data.message);
       } else {
-        console.log(response.data);
-        setActiveTab("login"); // Set active tab to login after signup
-        setShowDialog(true); // Show dialog
+        setActiveTab("login");
+        setShowDialog(true);
       }
     } catch (error) {
       console.error("Error during signup request:", error);
@@ -122,8 +81,7 @@ const Auth = () => {
         password: formData.loginPassword,
       });
 
-      if (response.data.error) {
-      } else {
+      if (!response.data.error) {
         localStorage.setItem("token", response.data.accessToken);
         localStorage.setItem("userName", response.data.user.name);
         localStorage.setItem("userEmail", response.data.user.email);
@@ -137,149 +95,262 @@ const Auth = () => {
     }
   };
 
+  const joinRoom = async () => {
+    setLoading(true);
+    const nameElement = document.getElementById("username") as HTMLInputElement;
+    const name = nameElement?.value;
+
+    try {
+      const response = await axios.post(
+        apiURL + "joinGuest",
+        {
+          roomCode: (document.getElementById("room-code") as HTMLInputElement)
+            ?.value,
+          name: name,
+        },
+        {
+          headers: {
+            "Content-Type": "application/json",
+          },
+        },
+      );
+
+      if (!response.data.error) {
+        localStorage.setItem("room", JSON.stringify(response.data));
+        localStorage.setItem("userName", name || "Guest");
+        localStorage.setItem("userEmail", "guest@app.com");
+        localStorage.setItem("userID", response.data.room.guest.id);
+        window.location.href = "/room/" + response.data.room.code;
+      }
+    } catch (error) {
+      console.error("Error during join room request:", error);
+    } finally {
+      setLoading(false);
+    }
+  };
+
   return (
-    <div className="flex items-center justify-center min-h-screen">
-      <Tabs
-        value={activeTab}
-        onValueChange={setActiveTab}
-        className="w-[365px]"
-      >
-        <TabsList className="grid w-full grid-cols-2">
-          <TabsTrigger value="login">Login</TabsTrigger>
-          <TabsTrigger value="signup">Signup</TabsTrigger>
-        </TabsList>
-        <TabsContent value="login">
-          <Card>
-            <CardHeader>
-              <CardTitle>Sign in to Quiz App</CardTitle>
-              <CardDescription>
-                Welcome back! Please sign in to continue.
-              </CardDescription>
-            </CardHeader>
-            <CardContent className="space-y-2">
-              <div className="space-y-1">
-                <Label htmlFor="loginEmail">Email</Label>
-                <Input id="loginEmail" onChange={handleInputChange} />
-              </div>
-              <div className="space-y-1">
-                <Label htmlFor="loginPassword">Password</Label>
-                <Input
-                  id="loginPassword"
-                  type="password"
-                  onChange={handleInputChange}
-                />
-              </div>
-            </CardContent>
-            <CardFooter className="flex-col">
-              <Button
-                onClick={handleLogin}
-                className="w-full"
-                disabled={loading}
-              >
-                {loading ? <Spinner content="Login" /> : "Login"}
-              </Button>
-              <div className={"text-sm"}>
-                Don't want to login?
-                <Button onClick={joinRoomDialog} variant="link" className="p-1">
-                  Continue as guest
+    <div className="flex min-h-screen items-center justify-center px-4">
+      <div className="w-full max-w-md space-y-4">
+        <div className="text-center">
+          <h1 className="text-2xl font-bold tracking-tight">Quiz App</h1>
+          <p className="mt-1 text-sm">GDG on Campus Yaşar University</p>
+        </div>
+
+        <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full">
+          <TabsList className="grid w-full grid-cols-2 mb-4">
+            <TabsTrigger value="login">Login</TabsTrigger>
+            <TabsTrigger value="signup">Sign up</TabsTrigger>
+          </TabsList>
+
+          <TabsContent value="login">
+            <Card>
+              <CardHeader className="space-y-1">
+                <CardTitle className="text-2xl font-bold">
+                  Welcome back
+                </CardTitle>
+                <CardDescription>
+                  Enter your credentials to continue
+                </CardDescription>
+              </CardHeader>
+              <CardContent className="space-y-4">
+                <div className="space-y-2">
+                  <Label htmlFor="loginEmail">Email</Label>
+                  <div className="relative">
+                    <Mail className="absolute left-3 top-3 h-4 w-4" />
+                    <Input
+                      id="loginEmail"
+                      type="email"
+                      placeholder="Enter your email"
+                      className="pl-10"
+                      onChange={handleInputChange}
+                    />
+                  </div>
+                </div>
+                <div className="space-y-2">
+                  <Label htmlFor="loginPassword">Password</Label>
+                  <div className="relative">
+                    <Lock className="absolute left-3 top-3 h-4 w-4" />
+                    <Input
+                      id="loginPassword"
+                      type="password"
+                      placeholder="Enter your password"
+                      className="pl-10"
+                      onChange={handleInputChange}
+                    />
+                  </div>
+                </div>
+              </CardContent>
+              <CardFooter className="flex-col space-y-4">
+                <Button
+                  onClick={handleLogin}
+                  className="w-full"
+                  disabled={loading}
+                >
+                  {loading ? (
+                    <Spinner content="Signing in..." />
+                  ) : (
+                    <>
+                      Sign in
+                      <ArrowRight className="ml-2 h-4 w-4" />
+                    </>
+                  )}
                 </Button>
-              </div>
-            </CardFooter>
-          </Card>
-        </TabsContent>
-        <TabsContent value="signup">
-          <Card>
-            <CardHeader>
-              <CardTitle>Create your account</CardTitle>
-              <CardDescription>
-                Welcome! Please fill in the details to get started.
-              </CardDescription>
-            </CardHeader>
-            <CardContent className="space-y-2">
-              <div className="space-y-1">
-                <Label htmlFor="name">Name</Label>
-                <Input id="name" onChange={handleInputChange} />
-              </div>
-              <div className="space-y-1">
-                <Label htmlFor="signupEmail">Email</Label>
-                <Input id="signupEmail" onChange={handleInputChange} />
-              </div>
-              <div className="space-y-1">
-                <Label htmlFor="signupPassword">Password</Label>
-                <Input
-                  id="signupPassword"
-                  type="password"
-                  onChange={handleInputChange}
-                />
-              </div>
-            </CardContent>
-            <CardFooter className={"flex-col"}>
-              <Button
-                onClick={handleSignup}
-                className="w-full"
-                disabled={loading}
-              >
-                {loading ? <Spinner content="Signup" /> : "Signup"}
-              </Button>
-              <div className={"text-sm"}>
-                Don't want to signup?
-                <Button onClick={joinRoomDialog} variant="link" className="p-1">
-                  Continue as guest
+                <div className="text-center text-sm">
+                  Don't have an account?{" "}
+                  <Button
+                    variant="link"
+                    className="p-0 h-auto font-semibold"
+                    onClick={() => setShowJoinDialog(true)}
+                  >
+                    Join as guest
+                  </Button>
+                </div>
+              </CardFooter>
+            </Card>
+          </TabsContent>
+
+          <TabsContent value="signup">
+            <Card>
+              <CardHeader className="space-y-1">
+                <CardTitle className="text-2xl font-bold">
+                  Create an account
+                </CardTitle>
+                <CardDescription>
+                  Enter your details to get started
+                </CardDescription>
+              </CardHeader>
+              <CardContent className="space-y-4">
+                <div className="space-y-2">
+                  <Label htmlFor="name">Full Name</Label>
+                  <div className="relative">
+                    <User className="absolute left-3 top-3 h-4 w-4" />
+                    <Input
+                      id="name"
+                      placeholder="Enter your name"
+                      className="pl-10"
+                      onChange={handleInputChange}
+                    />
+                  </div>
+                </div>
+                <div className="space-y-2">
+                  <Label htmlFor="signupEmail">Email</Label>
+                  <div className="relative">
+                    <Mail className="absolute left-3 top-3 h-4 w-4" />
+                    <Input
+                      id="signupEmail"
+                      type="email"
+                      placeholder="Enter your email"
+                      className="pl-10"
+                      onChange={handleInputChange}
+                    />
+                  </div>
+                </div>
+                <div className="space-y-2">
+                  <Label htmlFor="signupPassword">Password</Label>
+                  <div className="relative">
+                    <Lock className="absolute left-3 top-3 h-4 w-4" />
+                    <Input
+                      id="signupPassword"
+                      type="password"
+                      placeholder="Create a password"
+                      className="pl-10"
+                      onChange={handleInputChange}
+                    />
+                  </div>
+                </div>
+              </CardContent>
+              <CardFooter className="flex-col space-y-4">
+                <Button
+                  onClick={handleSignup}
+                  className="w-full"
+                  disabled={loading}
+                >
+                  {loading ? (
+                    <Spinner content="Creating account..." />
+                  ) : (
+                    <>
+                      Create account
+                      <ArrowRight className="ml-2 h-4 w-4" />
+                    </>
+                  )}
                 </Button>
-              </div>
-            </CardFooter>
-          </Card>
-        </TabsContent>
+                <div className="text-center text-sm">
+                  Don't have an account?{" "}
+                  <Button
+                    variant="link"
+                    className="p-0 h-auto font-semibold"
+                    onClick={() => setShowJoinDialog(true)}
+                  >
+                    Join as guest
+                  </Button>
+                </div>
+              </CardFooter>
+            </Card>
+          </TabsContent>
+        </Tabs>
+
         <AlertDialog open={showJoinDialog} onOpenChange={setShowJoinDialog}>
-          <AlertDialogContent>
+          <AlertDialogContent className="sm:max-w-md">
             <AlertDialogHeader>
-              <AlertDialogTitle>Play as Guest</AlertDialogTitle>
+              <AlertDialogTitle className="text-xl font-semibold">
+                Join as Guest
+              </AlertDialogTitle>
+              <AlertDialogDescription>
+                Enter your name and room code to continue
+              </AlertDialogDescription>
             </AlertDialogHeader>
-            <AlertDialogDescription>
-              Pick a name and enter the room code.
-            </AlertDialogDescription>
-            <Input
-              id="username"
-              placeholder="Name"
-              type="text"
-              autoComplete="off"
-              required
-              className="mt-2"
-            />
-            <Input
-              id="room-code"
-              placeholder="Room code"
-              type="text"
-              autoComplete="off"
-              required
-              className="mt-2"
-            />
+            <div className="space-y-4 py-4">
+              <div className="space-y-2">
+                <Label htmlFor="username">Your Name</Label>
+                <div className="relative">
+                  <User className="absolute left-3 top-3 h-4 w-4" />
+                  <Input
+                    id="username"
+                    placeholder="Enter your name"
+                    className="pl-10"
+                    autoComplete="off"
+                  />
+                </div>
+              </div>
+              <div className="space-y-2">
+                <Label htmlFor="room-code">Room Code</Label>
+                <div className={"relative"}>
+                  <Asterisk className="absolute left-3 top-3 h-4 w-4" />
+                  <Input
+                    id="room-code"
+                    placeholder="Enter room code"
+                    className="pl-10"
+                    autoComplete="off"
+                  />
+                </div>
+              </div>
+            </div>
             <AlertDialogFooter>
-              <AlertDialogCancel onClick={() => setShowJoinDialog(false)}>
-                Cancel
-              </AlertDialogCancel>
+              <AlertDialogCancel>Cancel</AlertDialogCancel>
               <Button onClick={joinRoom} disabled={loading}>
-                {loading ? <Spinner content="Join" /> : "Join"}
+                {loading ? <Spinner content="Joining..." /> : "Join Room"}
               </Button>
             </AlertDialogFooter>
           </AlertDialogContent>
         </AlertDialog>
-      </Tabs>
-      <AlertDialog open={showDialog} onOpenChange={setShowDialog}>
-        <AlertDialogContent>
-          <AlertDialogHeader>
-            <AlertDialogTitle>Signup Successful</AlertDialogTitle>
-          </AlertDialogHeader>
-          <AlertDialogDescription>
-            You need to login after signup.
-          </AlertDialogDescription>
-          <AlertDialogFooter>
-            <AlertDialogAction onClick={() => setShowDialog(false)}>
-              Ok
-            </AlertDialogAction>
-          </AlertDialogFooter>
-        </AlertDialogContent>
-      </AlertDialog>
+
+        <AlertDialog open={showDialog} onOpenChange={setShowDialog}>
+          <AlertDialogContent>
+            <AlertDialogHeader>
+              <AlertDialogTitle>Account Created Successfully</AlertDialogTitle>
+              <AlertDialogDescription>
+                Please sign in with your new account credentials.
+              </AlertDialogDescription>
+            </AlertDialogHeader>
+            <AlertDialogFooter>
+              <AlertDialogAction onClick={() => setShowDialog(false)}>
+                Continue to Login
+              </AlertDialogAction>
+            </AlertDialogFooter>
+          </AlertDialogContent>
+        </AlertDialog>
+      </div>
     </div>
   );
 };
