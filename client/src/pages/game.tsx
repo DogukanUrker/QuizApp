@@ -108,7 +108,9 @@ const Game = () => {
     } catch (err: unknown) {
       if (err instanceof Error) {
         setError(err.message);
-        toast.error("Failed to submit answer.");
+        toast.error("You already answered this question.");
+        await new Promise((resolve) => setTimeout(resolve, 2000));
+        window.location.href = `/game/${roomCode}/${parseInt(questionNumber) + 1}`;
       }
     }
   };

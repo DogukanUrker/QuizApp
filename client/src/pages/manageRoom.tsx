@@ -347,7 +347,7 @@ const ManageRoom: React.FC = () => {
       setStartedGame(true);
       toast.success("Game started successfully.");
       setTimeout(() => {
-        window.location.href = "/room/" + roomCode + "/leaderboard";
+        window.location.href = "/leaderboard/" + roomCode + "/manage";
       }, 1500);
     } catch (err) {
       toast.error("Failed to start game.");
@@ -391,7 +391,6 @@ const ManageRoom: React.FC = () => {
       </div>
     );
   }
-
   return (
     <div className="flex items-center justify-center min-h-screen p-4">
       <div className="p-6 rounded-lg shadow-lg w-full max-w-3xl">
@@ -428,7 +427,7 @@ const ManageRoom: React.FC = () => {
           <div className="mb-4 text-right">
             <Label className="block">Game Status</Label>
             <p className="text-xl">
-              {roomData?.room.gameStarded ? "Started" : "Not Started"}
+              {roomData?.room.gameStarted ? "Started" : "Not Started"}
             </p>
           </div>
         </div>
@@ -664,7 +663,7 @@ const ManageRoom: React.FC = () => {
               </AlertDialogFooter>
             </AlertDialogContent>
           </AlertDialog>
-          {roomData?.room.gameStarded ? (
+          {roomData?.room.gameStarted ? (
             <AlertDialog>
               <AlertDialogTrigger asChild>
                 <Button variant="destructive">End the Game</Button>

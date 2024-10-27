@@ -563,8 +563,14 @@ def submitAnswer():
         if not user:
             return jsonify({"error": "User not found"}), 404
 
-        if data["answer"] == data["correct"]:
+        if "answeredQuestions" not in user:
+            user["answeredQuestions"] = []
 
+        questionNumber = int(data["questionNumber"])
+        if questionNumber in user["answeredQuestions"]:
+            return jsonify({"error": "Question already answered"}), 403
+
+        if data["answer"] == data["correct"]:
             basePoint = data["point"]
             finalPoint = int((basePoint * (basePoint / (data["timeTaken"] / 96))) / 128)
 
@@ -573,9 +579,9 @@ def submitAnswer():
         else:
             user["falseAnswers"] = user.get("falseAnswers", 0) + 1
 
+        user["answeredQuestions"].append(questionNumber)
         roomsCollection.update_one({"code": data["roomCode"]}, {"$set": {"members": room["members"]}})
 
-        questionNumber = int(data["questionNumber"])
         if questionNumber < len(room["questions"]):
             return jsonify({"message": "Correct answer" if data["answer"] == data["correct"] else "Incorrect answer",
                             "status": "next"}), 200
