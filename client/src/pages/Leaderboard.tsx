@@ -72,7 +72,7 @@ const Leaderboard = () => {
 
   return (
     <div className={"flex items-center justify-center min-h-screen"}>
-      <div className={"h-11/12 w-full md:w-6/12"}>
+      <div className={"h-11/12 w-full md:w-8/12"}>
         <h1 className={"text-center text-xl mb-2 font-medium select-none"}>
           {roomName} - Leaderboard
         </h1>
