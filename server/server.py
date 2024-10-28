@@ -23,7 +23,8 @@ jwt = JWTManager(app)
 blacklist = set()
 
 
-@app.route("/api", methods=["GET"])
+@app.route("/api")
+@app.route("/")
 def api():
     return jsonify({"message": "Quiz App"})
 
@@ -909,4 +910,4 @@ def leaderboard():
 
 
 if __name__ == "__main__":
-    app.run(debug=True, host=Config.HOST, port=8080)
+    app.run()

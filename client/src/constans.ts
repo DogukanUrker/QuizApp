@@ -1,1 +1,1 @@
-export const apiURL = "http://192.168.1.100:8080/";
+export const apiURL = "https://quizapp-server-flame.vercel.app/";

@@ -67,7 +67,7 @@ const Game = () => {
     const fetchQuestionData = async () => {
       try {
         const response = await axios.post<QuestionData>(
-          `${apiURL}/getQuestion`,
+          `${apiURL}getQuestion`,
           {
             roomCode,
             questionNumber,
@@ -108,7 +108,7 @@ const Game = () => {
       if (remaining <= 0) {
         clearInterval(timer);
         toast.error("Time's up!");
-        axios.post(`${apiURL}/timeoutAnswer`, {
+        axios.post(`${apiURL}timeoutAnswer`, {
           roomCode,
           userID,
           questionNumber,
@@ -127,7 +127,7 @@ const Game = () => {
 
     try {
       const response = await axios.post<SubmitAnswerResponse>(
-        `${apiURL}/submitAnswer`,
+        `${apiURL}submitAnswer`,
         {
           roomCode,
           userID,
