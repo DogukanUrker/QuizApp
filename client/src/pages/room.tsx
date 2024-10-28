@@ -109,17 +109,20 @@ const Room: React.FC = () => {
             },
           },
         );
-        setRoomData((prevData) => ({
-          ...prevData,
-          room: {
-            ...prevData?.room,
-            members: response.data.users,
-            name: prevData?.room.name || "", // Ensure name is always a string
-            code: prevData?.room.code || "", // Ensure code is always a string
-            owner: prevData?.room.owner,
-            gameStarted: prevData?.room.gameStarted,
-          },
-        }));
+        setRoomData((prevData) => {
+          if (!prevData) return null;
+          return {
+            ...prevData,
+            room: {
+              ...prevData.room,
+              members: response.data.users,
+              name: prevData.room.name || "", // Ensure name is always a string
+              code: prevData.room.code || "", // Ensure code is always a string
+              owner: prevData.room.owner || { name: "", email: "" },
+              gameStarted: prevData.room.gameStarted,
+            },
+          };
+        });
       } catch (err: unknown) {
         if (err instanceof Error) {
           toast.error("Failed to fetch users.");
@@ -211,7 +214,9 @@ const Room: React.FC = () => {
     }
   };
 
-  document.title = roomData.room.name;
+  if (roomData) {
+    document.title = roomData.room.name;
+  }
 
   return (
     <div className="min-h-screen bg-gradient-to-b from-background to-secondary/20 p-8 flex items-center justify-center md:mt-0 mt-2">
@@ -349,7 +354,9 @@ const Room: React.FC = () => {
                           <div className="flex items-center justify-between py-3 px-2 hover:bg-accent/50 rounded-md transition-colors">
                             <div className="flex items-center gap-2">
                               <span className="font-medium">
-                                {typeof member === "object" ? member : member}
+                                {typeof member === "object"
+                                  ? member.name
+                                  : member}
                               </span>
                               {(typeof member === "object"
                                 ? member.email === roomData.room.owner.email

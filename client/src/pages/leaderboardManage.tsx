@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from "react";
+import { useEffect, useState } from "react";
 import axios from "axios";
 import { apiURL } from "@/constans.ts";
 import { useParams } from "react-router-dom";
@@ -42,10 +42,6 @@ const LeaderboardManage = () => {
   const [owner, setOwner] = useState<string | boolean>(false);
   const { roomCode } = useParams<{ roomCode: string }>();
   const [roomName, setRoomName] = useState("");
-  const [selectedMember, setSelectedMember] = useState<Member | null>(null);
-  const [banningUser, setBanningUser] = useState<string | null>(null);
-  const [bannedUser, setBannedUser] = useState<string | null>(null);
-
   const fetchLeaderboard = async () => {
     try {
       const response = await axios.post(`${apiURL}leaderboard`, { roomCode });
@@ -68,10 +64,9 @@ const LeaderboardManage = () => {
   }, [roomCode]);
 
   const handleBanUser = async (id: string) => {
-    setBanningUser(id);
     const token = localStorage.getItem("token");
     try {
-      const response = await axios.post(
+      await axios.post(
         apiURL + "banUser",
         {
           userID: id,
@@ -85,12 +80,9 @@ const LeaderboardManage = () => {
         },
       );
       toast.success("User banned successfully.");
-      setBannedUser(id);
     } catch (err) {
       console.error("Failed to ban user:", err); // Log the error
       toast.error("Failed to ban user.");
-    } finally {
-      setBanningUser(null);
     }
   };
 
@@ -203,7 +195,6 @@ const LeaderboardManage = () => {
                               variant="ghost"
                               size="icon"
                               className="hover:bg-destructive/90 hover:text-destructive-foreground mx-auto"
-                              onClick={() => setSelectedMember(member)}
                             >
                               <UserX className="h-4 w-4" />
                             </Button>

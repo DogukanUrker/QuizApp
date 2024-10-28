@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from "react";
+import { useEffect, useState } from "react";
 import axios from "axios";
 import { apiURL } from "@/constans.ts";
 import { useParams } from "react-router-dom";

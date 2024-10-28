@@ -56,7 +56,6 @@ const Game = () => {
   const [questionData, setQuestionData] = useState<QuestionData | null>(null);
   const [startTime, setStartTime] = useState<number | null>(null);
   const [timeLeft, setTimeLeft] = useState<number>(0);
-  const [selectedOption, setSelectedOption] = useState<string | null>(null);
   const [selectedAnswer, setSelectedAnswer] = useState<string | null>(null);
 
   const form = useForm<z.infer<typeof FormSchema>>({

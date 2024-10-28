@@ -47,9 +47,11 @@ interface RoomData {
     name: string;
     code: string;
     owner: {
+      email: string;
       name: string;
     };
     members: { name: string; email: string; id: string }[];
+    gameStarted: boolean;
   };
 }
 
@@ -63,6 +65,8 @@ interface Question {
     d: string;
   };
   correct: string;
+  point: number;
+  time: number;
 }
 
 const ManageRoom: React.FC = () => {
@@ -82,21 +86,12 @@ const ManageRoom: React.FC = () => {
   const [deletingQuestionId, setDeletingQuestionId] = useState<string | null>(
     null,
   );
-  const [deletedQuestionId, setDeletedQuestionId] = useState<string | null>(
-    null,
-  );
   const [addingQuestion, setAddingQuestion] = useState(false);
-  const [addedQuestion, setAddedQuestion] = useState(false);
   const [banningUserEmail, setBanningUser] = useState<string | null>(null);
   const [bannedUserEmail, setBannedUser] = useState<string | null>(null);
   const [deletingRoom, setDeletingRoom] = useState(false);
-  const [deletedRoom, setDeletedRoom] = useState(false);
-
   const [startingGame, setStartingGame] = useState(false);
-  const [startedGame, setStartedGame] = useState(false);
-
   const [endingGame, setEndingGame] = useState(false);
-  const [endedGame, setEndedGame] = useState(false);
 
   useEffect(() => {
     const fetchRoomData = async () => {
@@ -118,7 +113,9 @@ const ManageRoom: React.FC = () => {
         );
         setRoomData(response.data);
       } catch (err) {
-        setError(err.message);
+        if (err instanceof Error) {
+          setError(err.message);
+        }
         toast.error("Failed to fetch room data.");
       } finally {
         setLoading(false);
@@ -140,7 +137,9 @@ const ManageRoom: React.FC = () => {
         );
         setQuestions(response.data.questions);
       } catch (err) {
-        setError(err.message);
+        if (err instanceof Error) {
+          setError(err.message);
+        }
         toast.error("Failed to fetch questions.");
       }
     };
@@ -163,13 +162,17 @@ const ManageRoom: React.FC = () => {
             },
           },
         );
-        setRoomData((prevData) => ({
-          ...prevData,
-          room: {
-            ...prevData?.room,
-            members: response.data.users,
-          },
-        }));
+        setRoomData((prevData) => {
+          if (!prevData) return prevData;
+          return {
+            ...prevData,
+            room: {
+              ...prevData.room,
+              members: response.data.users,
+            },
+          };
+        });
+        // eslint-disable-next-line @typescript-eslint/no-unused-vars
       } catch (err) {
         toast.error("Failed to fetch users.");
       }
@@ -237,7 +240,6 @@ const ManageRoom: React.FC = () => {
         },
       );
       toast.success("Question added successfully.");
-      setAddedQuestion(true);
       setTimeout(() => {
         window.location.reload();
       }, 1500);
@@ -266,7 +268,6 @@ const ManageRoom: React.FC = () => {
         },
       );
       toast.success("Question deleted successfully.");
-      setDeletedQuestionId(questionId);
       setTimeout(() => {
         window.location.reload();
       }, 1500);
@@ -281,7 +282,7 @@ const ManageRoom: React.FC = () => {
     setBanningUser(id);
     const token = localStorage.getItem("token");
     try {
-      const response = await axios.post(
+      await axios.post(
         apiURL + "banUser",
         {
           userID: id,
@@ -303,6 +304,7 @@ const ManageRoom: React.FC = () => {
       setBanningUser(null);
     }
   };
+
   const handleDeleteRoom = async () => {
     setDeletingRoom(true);
     const token = localStorage.getItem("token");
@@ -319,7 +321,6 @@ const ManageRoom: React.FC = () => {
           },
         },
       );
-      setDeletedRoom(true);
       toast.success("Room deleted successfully.");
       setTimeout(() => {
         window.location.href = "/";
@@ -347,7 +348,6 @@ const ManageRoom: React.FC = () => {
           },
         },
       );
-      setStartedGame(true);
       toast.success("Game started successfully.");
       setTimeout(() => {
         window.location.href = "/leaderboard/" + roomCode + "/manage";
@@ -375,7 +375,6 @@ const ManageRoom: React.FC = () => {
           },
         },
       );
-      setEndedGame(true);
       toast.success("Game ended successfully.");
       setTimeout(() => {
         window.location.href = "/leaderboard/" + roomCode + "/manage";
