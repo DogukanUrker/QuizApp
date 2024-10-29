@@ -59,7 +59,7 @@ const LeaderboardManage = () => {
 
   useEffect(() => {
     fetchLeaderboard();
-    const interval = setInterval(fetchLeaderboard, 3000);
+    const interval = setInterval(fetchLeaderboard, 4000);
     return () => clearInterval(interval);
   }, [roomCode]);
 

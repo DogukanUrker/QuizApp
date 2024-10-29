@@ -157,7 +157,7 @@ const Room: React.FC = () => {
       }
     };
 
-    const intervalId = setInterval(fetchGameStatus, 3000);
+    const intervalId = setInterval(fetchGameStatus, 6000);
     return () => clearInterval(intervalId);
   }, [roomCode]);
 

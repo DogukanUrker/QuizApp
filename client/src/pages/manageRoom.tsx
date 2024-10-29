@@ -178,7 +178,7 @@ const ManageRoom: React.FC = () => {
       }
     };
 
-    const intervalId = setInterval(fetchUsers, 3000);
+    const intervalId = setInterval(fetchUsers, 4000);
     return () => clearInterval(intervalId);
   }, [roomCode]);
 
