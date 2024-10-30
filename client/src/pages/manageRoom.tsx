@@ -433,7 +433,7 @@ const ManageRoom: React.FC = () => {
               <Card>
                 <CardHeader>
                   <CardTitle className="text-lg">
-                    Members ({roomData?.room.members.length})
+                    Players ({roomData?.room.members.length})
                   </CardTitle>
                 </CardHeader>
                 <CardContent>

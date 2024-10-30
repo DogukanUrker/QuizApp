@@ -344,7 +344,7 @@ const Room: React.FC = () => {
               <div>
                 <div className="flex items-center gap-2 mb-4">
                   <Users className="h-5 w-5" />
-                  <Label>Members ({roomData?.room.members.length})</Label>
+                  <Label>Players ({roomData?.room.members.length})</Label>
                 </div>
                 <Card>
                   <ScrollArea className="h-[300px] w-full">

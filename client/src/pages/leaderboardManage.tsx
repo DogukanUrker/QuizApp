@@ -134,7 +134,7 @@ const LeaderboardManage = () => {
             <div className="p-4">
               <div className="mb-4 flex items-center justify-between">
                 <h4 className="text-sm font-medium text-muted-foreground">
-                  {leaderboard?.length} Members
+                  {leaderboard?.length} Players
                 </h4>
               </div>
               <Table>
