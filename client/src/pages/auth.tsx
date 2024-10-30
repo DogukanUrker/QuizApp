@@ -54,6 +54,10 @@ const Auth = () => {
   const handleSignup = async () => {
     try {
       setLoading(true);
+      if (!formData.name || !formData.signupEmail || !formData.signupPassword) {
+        setLoading(false);
+        return;
+      }
       const response = await axios.post(apiURL + "addUser", {
         name: formData.name,
         email: formData.signupEmail,
@@ -76,6 +80,10 @@ const Auth = () => {
   const handleLogin = async () => {
     try {
       setLoading(true);
+      if (!formData.loginEmail || !formData.loginPassword) {
+        setLoading(false);
+        return;
+      }
       const response = await axios.post(apiURL + "login", {
         email: formData.loginEmail,
         password: formData.loginPassword,
@@ -99,6 +107,12 @@ const Auth = () => {
     setLoading(true);
     const nameElement = document.getElementById("username") as HTMLInputElement;
     const name = nameElement?.value;
+
+    if (!name) {
+      nameElement?.focus();
+      setLoading(false);
+      return;
+    }
 
     try {
       const response = await axios.post(
